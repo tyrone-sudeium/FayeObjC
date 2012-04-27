@@ -32,6 +32,7 @@
 
 #import "JSONKit.h"
 #import "SRWebSocket.h"
+#import "FayeChannel.h"
 
 enum _fayeStates {
   kWebSocketDisconnected,
@@ -40,6 +41,8 @@ enum _fayeStates {
   kFayeConnected  
 } fayeStates;
 
+#define kFayeErrorDomain @"FayeErrorDomain"
+
 // Bayeux protocol channels
 #define HANDSHAKE_CHANNEL @"/meta/handshake"
 #define CONNECT_CHANNEL @"/meta/connect"
@@ -47,40 +50,43 @@ enum _fayeStates {
 #define SUBSCRIBE_CHANNEL @"/meta/subscribe"
 #define UNSUBSCRIBE_CHANNEL @"/meta/unsubscribe"
 
+@class FayeClient;
+
 @protocol FayeClientDelegate <NSObject>
 
-- (void)messageReceived:(NSDictionary *)messageDict;
-- (void)connectedToServer;
-- (void)disconnectedFromServer;
-- (void)subscriptionFailedWithError:(NSString *)error;
+- (void) fayeClient: (FayeClient*) client didReceiveMessage:(NSDictionary *)messageDict forChannel: (FayeChannel*) channel;
+- (void) fayeClientDidConnectToServer: (FayeClient*) client;
+- (void) fayeClientDidDisconnectFromServer: (FayeClient*) client;
+- (void) fayeClient: (FayeClient*) client didFailSubscriptionWithError: (NSError*) error;
 
 @end
 
 
 @interface FayeClient : NSObject <SRWebSocketDelegate> {
-  NSString *fayeURLString;
-  SRWebSocket* webSocket;
-  NSString *fayeClientId;
-  BOOL webSocketConnected;  
-  NSString *activeSubChannel;
-  __unsafe_unretained id <FayeClientDelegate> delegate;  
-  @private
-  BOOL fayeConnected;  
-  NSDictionary *connectionExtension;
+    NSString *fayeURLString;
+    SRWebSocket* webSocket;
+    NSString *fayeClientId;
+    BOOL webSocketConnected;  
+    NSString *activeSubChannel;
+@private
+    BOOL fayeConnected;  
+    NSDictionary *connectionExtension;
 }
 
-@property (retain) NSString *fayeURLString;
-@property (retain) SRWebSocket* webSocket;
-@property (retain) NSString *fayeClientId;
-@property (assign) BOOL webSocketConnected;
-@property (retain) NSString *activeSubChannel;
-@property (assign, unsafe_unretained) id <FayeClientDelegate> delegate;
+@property (nonatomic, retain) NSString *fayeURLString;
+@property (nonatomic, retain) SRWebSocket* webSocket;
+@property (nonatomic, retain) NSString *fayeClientId;
+@property (nonatomic, assign) BOOL webSocketConnected;
+@property (nonatomic, weak) id <FayeClientDelegate> delegate;
+@property (nonatomic, readonly) NSArray *subscribedChannels;
 
-- (id) initWithURLString:(NSString *)aFayeURLString channel:(NSString *)channel;
+- (id) initWithURLString:(NSString *)aFayeURLString;
+- (void) subscribeToChannel: (FayeChannel*) channel;
+- (void) unsubscribeFromChannel: (FayeChannel*) channel;
 - (void) connectToServer;
 - (void) connectToServerWithExt:(NSDictionary *)extension;
 - (void) disconnectFromServer;
-- (void) sendMessage:(NSDictionary *)messageDict;
-- (void) sendMessage:(NSDictionary *)messageDict withExt:(NSDictionary *)extension;
+- (void) sendMessage:(NSDictionary *)messageDict toChannel: (FayeChannel*) channel;
+- (void) sendMessage:(NSDictionary *)messageDict withExt:(NSDictionary *)extension toChannel: (FayeChannel*) channel;
 
 @end
