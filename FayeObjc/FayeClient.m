@@ -183,7 +183,7 @@
     self.webSocketConnected = NO;  
     fayeConnected = NO;
     [self.mySubscribedChannels removeAllObjects];
-    if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(disconnectedFromServer)]) {
+    if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClientDidDisconnectFromServer:)]) {
         [self.delegate fayeClientDidDisconnectFromServer: self];
     }
 }
@@ -308,9 +308,9 @@
             if ([fm.successful boolValue]) {        
                 fayeConnected = NO;  
                 [self closeWebSocketConnection];
-                if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClientDidDisconnectFromServer:)]) {
-                    [self.delegate fayeClientDidDisconnectFromServer: self];
-                }
+//                if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClientDidDisconnectFromServer:)]) {
+//                    [self.delegate fayeClientDidDisconnectFromServer: self];
+//                }
             } else {
                 NSLog(@"ERROR DISCONNECTING TO FAYE");
             }
