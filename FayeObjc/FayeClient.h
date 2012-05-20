@@ -81,8 +81,8 @@ enum _fayeStates {
 @property (nonatomic, readonly) NSArray *subscribedChannels;
 
 - (id) initWithURLString:(NSString *)aFayeURLString;
-- (void) subscribeToChannel: (FayeChannel*) channel;
-- (void) unsubscribeFromChannel: (FayeChannel*) channel;
+- (FayeChannel*) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler;
+- (void) unsubscribeFromChannel: (NSString*) channelPath;
 - (void) connectToServer;
 - (void) connectToServerWithExt:(NSDictionary *)extension;
 - (void) disconnectFromServer;

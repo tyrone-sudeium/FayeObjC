@@ -28,7 +28,7 @@
 #import "FayeChannel.h"
 
 @implementation FayeChannel
-@synthesize channelPath;
+@synthesize channelPath, messageHandlerBlock;
 
 + (FayeChannel*) channelWithPath:(NSString *)path
 {

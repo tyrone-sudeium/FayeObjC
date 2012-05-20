@@ -113,9 +113,14 @@
 // "subscription": "/foo/**"
 // }
 
-- (void) subscribeToChannel:(FayeChannel*)channel {
-    if ([self.mySubscribedChannels objectForKey: channel.channelPath] != nil) {
-        return;
+- (FayeChannel*) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler
+{
+    FayeChannel *channel = [self.mySubscribedChannels objectForKey: channel];
+    if (channel != nil) {
+        return channel;
+    } else {
+        channel = [FayeChannel channelWithPath: channelPath];
+        channel.messageHandlerBlock = handler;
     }
     [self.mySubscribedChannels setValue: channel forKey: channel.channelPath];
     
@@ -133,6 +138,7 @@
     
     NSString *json = [dict JSONString];    
     [webSocket send:json];
+    return channel;
 }
 
 
@@ -142,8 +148,9 @@
 // "subscription": "/foo/**"
 // }
 
-- (void) unsubscribeFromChannel:(FayeChannel*)channel {
-    [self.mySubscribedChannels removeObjectForKey: channel.channelPath];
+- (void) unsubscribeFromChannel:(NSString*)channelPath {
+    __strong FayeChannel *channel = [self.mySubscribedChannels objectForKey: channel];
+    [self.mySubscribedChannels removeObjectForKey: channelPath];
     
     NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:UNSUBSCRIBE_CHANNEL, @"channel", 
                           self.fayeClientId, @"clientId", 
@@ -325,7 +332,12 @@
                 if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClient:didReceiveMessage:forChannel:)]) {          
                     [self.delegate fayeClient: self didReceiveMessage: fm.data forChannel: channel];
                 }
-            }           
+            }
+            if (channel.messageHandlerBlock != NULL) {
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                     channel.messageHandlerBlock(fm.data);
+                });
+            }
         } else {
             NSLog(@"NO MATCH FOR CHANNEL %@", fm.channel);      
         }    
