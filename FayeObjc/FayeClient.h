@@ -30,7 +30,6 @@
 #import <UIKit/UIKit.h>
 #endif
 
-#import "JSONKit.h"
 #import "SRWebSocket.h"
 #import "FayeChannel.h"
 
