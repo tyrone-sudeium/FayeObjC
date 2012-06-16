@@ -171,7 +171,10 @@
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error;
 {  
     // TODO: add more explicit error handling based on status codes.
-    NSLog(@"Error %@", [error localizedDescription]);
+    // NSLog(@"Error %@", [error localizedDescription]);
+    if (self.delegate != NULL && [self.delegate respondsToSelector: @selector(fayeClient:didFailToConnectToServerWithError:)]) {
+        [self.delegate fayeClient: self didFailToConnectToServerWithError: error];
+    }
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(NSString *)message;

@@ -56,6 +56,7 @@ enum _fayeStates {
 - (void) fayeClient: (FayeClient*) client didReceiveMessage:(NSDictionary *)messageDict forChannel: (FayeChannel*) channel;
 - (void) fayeClientDidConnectToServer: (FayeClient*) client;
 - (void) fayeClientDidDisconnectFromServer: (FayeClient*) client;
+- (void) fayeClient: (FayeClient*) client didFailToConnectToServerWithError: (NSError*) error;
 - (void) fayeClient: (FayeClient*) client didFailSubscriptionWithError: (NSError*) error;
 
 @end
