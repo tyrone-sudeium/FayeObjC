@@ -115,7 +115,7 @@
 
 - (FayeChannel*) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler
 {
-    FayeChannel *channel = [self.mySubscribedChannels objectForKey: channel];
+    FayeChannel *channel = [self.mySubscribedChannels objectForKey: channelPath];
     if (channel != nil) {
         return channel;
     } else {
@@ -273,9 +273,9 @@
     NSDictionary *dict = nil;
     
     if(nil == extension) {
-        dict = [NSDictionary dictionaryWithObjectsAndKeys:channel, @"channel", self.fayeClientId, @"clientId", messageDict, @"data", messageId, @"id", nil];
+        dict = [NSDictionary dictionaryWithObjectsAndKeys:channel.channelPath, @"channel", self.fayeClientId, @"clientId", messageDict, @"data", messageId, @"id", nil];
     } else {
-        dict = [NSDictionary dictionaryWithObjectsAndKeys:channel, @"channel", self.fayeClientId, @"clientId", messageDict, @"data", messageId, @"id", extension, @"ext",nil];
+        dict = [NSDictionary dictionaryWithObjectsAndKeys:channel.channelPath, @"channel", self.fayeClientId, @"clientId", messageDict, @"data", messageId, @"id", extension, @"ext",nil];
     }
     
     NSData *json = [NSJSONSerialization dataWithJSONObject: dict options: 0 error: NULL];
