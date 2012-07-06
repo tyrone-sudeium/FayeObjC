@@ -172,6 +172,9 @@
 {  
     // TODO: add more explicit error handling based on status codes.
     // NSLog(@"Error %@", [error localizedDescription]);
+    self.webSocketConnected = NO;
+    fayeConnected = NO;
+    [self.mySubscribedChannels removeAllObjects];
     if (self.delegate != NULL && [self.delegate respondsToSelector: @selector(fayeClient:didFailToConnectToServerWithError:)]) {
         [self.delegate fayeClient: self didFailToConnectToServerWithError: error];
     }
