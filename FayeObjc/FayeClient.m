@@ -49,7 +49,12 @@
 @end
 
 
-@implementation FayeClient
+@implementation FayeClient {
+    struct {
+        BOOL isDisconnecting:1;
+    } _fayeClientFlags;
+}
+
 @synthesize mySubscribedChannels;
 @synthesize fayeURLString;
 @synthesize webSocket;
@@ -95,7 +100,16 @@
 }
 
 - (void) disconnectFromServer {  
-    [self disconnect];  
+    // Disconnect from all channels
+    if ([self.subscribedChannels count] > 0) {
+        _fayeClientFlags.isDisconnecting = YES;
+        for (FayeChannel *channel in self.subscribedChannels) {
+            [self unsubscribeFromChannel: channel.channelPath];
+        }
+    } else {
+        _fayeClientFlags.isDisconnecting = NO;
+        [self disconnect];
+    }
 }
 
 - (void) sendMessage:(NSDictionary *)messageDict toChannel:(FayeChannel *)channel {
@@ -171,7 +185,7 @@
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error;
 {  
     // TODO: add more explicit error handling based on status codes.
-    // NSLog(@"Error %@", [error localizedDescription]);
+    // FAYE_DLog(@"Error %@", [error localizedDescription]);
     self.webSocketConnected = NO;
     fayeConnected = NO;
     [self.mySubscribedChannels removeAllObjects];
@@ -301,14 +315,14 @@
                 }
                 [self connect];
             } else {
-                NSLog(@"ERROR WITH HANDSHAKE");
+                FAYE_DLog(@"ERROR WITH HANDSHAKE");
             }    
         } else if ([fm.channel isEqualToString:CONNECT_CHANNEL]) {      
             if ([fm.successful boolValue]) {        
                 fayeConnected = YES;
                 [self connect];
             } else {
-                NSLog(@"ERROR CONNECTING TO FAYE");
+                FAYE_DLog(@"ERROR CONNECTING TO FAYE");
             }
         } else if ([fm.channel isEqualToString:DISCONNECT_CHANNEL]) {
             if ([fm.successful boolValue]) {        
@@ -318,20 +332,24 @@
 //                    [self.delegate fayeClientDidDisconnectFromServer: self];
 //                }
             } else {
-                NSLog(@"ERROR DISCONNECTING TO FAYE");
+                FAYE_DLog(@"ERROR DISCONNECTING TO FAYE");
             }
         } else if ([fm.channel isEqualToString:SUBSCRIBE_CHANNEL]) {      
             if ([fm.successful boolValue]) {
-                NSLog(@"SUBSCRIBED TO CHANNEL %@ ON FAYE", fm.subscription);        
+                FAYE_DLog(@"SUBSCRIBED TO CHANNEL %@ ON FAYE", fm.subscription);        
             } else {
-                NSLog(@"ERROR SUBSCRIBING TO %@ WITH ERROR %@", fm.subscription, fm.error);
+                FAYE_DLog(@"ERROR SUBSCRIBING TO %@ WITH ERROR %@", fm.subscription, fm.error);
                 if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClient:didFailSubscriptionWithError:)]) {
                     NSError *error = [NSError errorWithDomain: kFayeErrorDomain code: 1337 userInfo: [NSDictionary dictionaryWithObject: fm.error forKey: NSLocalizedDescriptionKey]];
                     [self.delegate fayeClient: self didFailSubscriptionWithError: error];
                 }        
             }      
         } else if ([fm.channel isEqualToString:UNSUBSCRIBE_CHANNEL]) {
-            NSLog(@"UNSUBSCRIBED FROM CHANNEL %@ ON FAYE", fm.subscription);
+            FAYE_DLog(@"UNSUBSCRIBED FROM CHANNEL %@ ON FAYE", fm.subscription);
+            if (_fayeClientFlags.isDisconnecting && [self.subscribedChannels count] == 0) {
+                _fayeClientFlags.isDisconnecting = NO;
+                [self disconnect];
+            }
         } else if ([self.mySubscribedChannels objectForKey: fm.channel] != nil) {
             FayeChannel *channel = [self.mySubscribedChannels objectForKey: fm.channel];
             if(fm.data) {        
@@ -345,7 +363,7 @@
                 });
             }
         } else {
-            NSLog(@"NO MATCH FOR CHANNEL %@", fm.channel);      
+            FAYE_DLog(@"NO MATCH FOR CHANNEL %@", fm.channel);      
         }    
     }  
 }
