@@ -27,7 +27,7 @@
 
 #import <Foundation/Foundation.h>
 
-typedef void(^FayeChannelMessageHandlerBlock)(NSDictionary *messageDict);
+typedef void(^FayeChannelMessageHandlerBlock)(NSString* channelPath, NSDictionary *messageDict);
 
 @interface FayeChannel : NSObject
 @property (nonatomic, copy) NSString *channelPath;

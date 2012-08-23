@@ -350,21 +350,31 @@
                 _fayeClientFlags.isDisconnecting = NO;
                 [self disconnect];
             }
-        } else if ([self.mySubscribedChannels objectForKey: fm.channel] != nil) {
-            FayeChannel *channel = [self.mySubscribedChannels objectForKey: fm.channel];
-            if(fm.data) {        
-                if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClient:didReceiveMessage:forChannel:)]) {          
-                    [self.delegate fayeClient: self didReceiveMessage: fm.data forChannel: channel];
-                }
-            }
-            if (channel.messageHandlerBlock != NULL) {
-                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                     channel.messageHandlerBlock(fm.data);
-                });
-            }
         } else {
-            FAYE_DLog(@"NO MATCH FOR CHANNEL %@", fm.channel);      
-        }    
+            FayeChannel *channel = [self.mySubscribedChannels objectForKey: fm.channel];
+            if (channel == nil) {
+                // Try to match a wildcard channel
+                NSMutableArray *messageChannelComponents = [fm.channel componentsSeparatedByString:@"/"].mutableCopy;
+                [messageChannelComponents removeLastObject];
+                [messageChannelComponents addObject: @"*"];
+                NSString *channelKey = [messageChannelComponents componentsJoinedByString: @"/"];
+                channel = [self.mySubscribedChannels objectForKey: channelKey];
+            }
+            if (channel != nil) {
+                if(fm.data) {        
+                    if(self.delegate != NULL && [self.delegate respondsToSelector:@selector(fayeClient:didReceiveMessage:forChannel:)]) {          
+                        [self.delegate fayeClient: self didReceiveMessage: fm.data forChannel: channel];
+                    }
+                }
+                if (channel.messageHandlerBlock != NULL) {
+                    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                         channel.messageHandlerBlock(fm.channel, fm.data);
+                    });
+                }
+            } else {
+                FAYE_DLog(@"NO MATCH FOR CHANNEL %@", fm.channel);
+            }
+        }  
     }  
 }
 
