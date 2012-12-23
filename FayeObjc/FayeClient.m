@@ -163,7 +163,7 @@
 // }
 
 - (void) unsubscribeFromChannel:(NSString*)channelPath {
-    __strong FayeChannel *channel = [self.mySubscribedChannels objectForKey: channel];
+    __strong FayeChannel *channel = [self.mySubscribedChannels objectForKey: channelPath];
     [self.mySubscribedChannels removeObjectForKey: channelPath];
     
     NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:UNSUBSCRIBE_CHANNEL, @"channel", 
