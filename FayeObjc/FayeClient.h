@@ -83,7 +83,7 @@ enum _fayeStates {
 @property (nonatomic, retain) SRWebSocket* webSocket;
 @property (nonatomic, retain) NSString *fayeClientId;
 @property (nonatomic, assign) BOOL webSocketConnected;
-@property (nonatomic, weak) id <FayeClientDelegate> delegate;
+@property (nonatomic, unsafe_unretained) id <FayeClientDelegate> delegate;
 @property (nonatomic, readonly) NSArray *subscribedChannels;
 
 - (id) initWithURLString:(NSString *)aFayeURLString;
