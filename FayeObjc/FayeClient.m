@@ -33,6 +33,7 @@
 @interface FayeClient ()
 @property (nonatomic, strong) NSMutableDictionary *mySubscribedChannels;
 @property (retain) NSDictionary *connectionExtension;
+@property (nonatomic, strong) NSFileHandle *logFile;
 
 @end
 
@@ -75,6 +76,15 @@
         self.webSocketConnected = NO;
         self.mySubscribedChannels = [NSMutableDictionary new];
         fayeConnected = NO;
+        
+        // Logging
+        NSString* cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+        NSString* logFile = [cacheDir stringByAppendingPathComponent: @"faye.log"];
+        if (![[NSFileManager defaultManager] fileExistsAtPath: logFile]) {
+            [[NSFileManager defaultManager] createFileAtPath: logFile contents: nil attributes: nil];
+        }
+        self.logFile = [NSFileHandle fileHandleForWritingAtPath: logFile];
+        [self.logFile seekToEndOfFile];
     }
     return self;
 }
@@ -213,6 +223,7 @@
 - (void) dealloc
 {
     self.delegate = nil;
+    [self.logFile closeFile];
 }
 
 @end
@@ -304,6 +315,16 @@
 - (void) parseFayeMessage:(NSString *)message {
     // interpret the message(s)
     NSArray *messageArray = [NSJSONSerialization JSONObjectWithData:[message dataUsingEncoding:NSUTF8StringEncoding] options: 0 error: NULL];
+#ifdef FAYEOBJC_DEBUGGING
+    NSString *logLine = nil;
+    if (messageArray) {
+        logLine = [[NSString alloc] initWithData: [NSJSONSerialization dataWithJSONObject: messageArray options: NSJSONWritingPrettyPrinted error: NULL] encoding: NSUTF8StringEncoding];
+    } else {
+        logLine = message;
+    }
+    logLine = [NSString stringWithFormat: @"[%@]: %@\n", [NSDate date], logLine];
+    [self.logFile writeData: [logLine dataUsingEncoding: NSUTF8StringEncoding]];
+#endif
     for(NSDictionary *messageDict in messageArray) {
         FayeMessage *fm = [[FayeMessage alloc] initWithDict:messageDict];
         
