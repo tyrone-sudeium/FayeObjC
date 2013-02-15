@@ -29,8 +29,8 @@ If the received message is valid JSON, it'll even pretty-print it for you!
 
 # To Do for 3.0
 
-### Cocoapods Support [in dev]
-Remove all third-party dependencies from the base repository.  Create a podspec for FayeObjC and specify all dependencies there.  Add a `Podfile` for each of the example projects which simply references FayeObjC's podspec.  Update the documentation to explain how to get Cocoapods set up to use the example projects.
+### Cocoapods Support [done]
+Remove all third-party dependencies from the base repository.  Create a podspec for FayeObjC and specify all dependencies there.  Add dependencies as submodules and update example projects to link to the dependencies and FayeClient using project linking.
 
 ### Long-polling Support [in dev]
 As well as websockets, the client should use long-polling if the connection URL is `http://` or `https://`.  Note that this behaviour differs from the Faye JavaScript client which - in my opinion - is really bizarre.

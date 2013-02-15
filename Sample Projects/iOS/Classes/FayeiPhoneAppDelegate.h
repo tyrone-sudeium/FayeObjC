@@ -8,15 +8,15 @@
 
 #import <UIKit/UIKit.h>
 
-@class fayeiPhoneViewController;
+@class FayeiPhoneViewController;
 
-@interface fayeiPhoneAppDelegate : NSObject <UIApplicationDelegate> {
+@interface FayeiPhoneAppDelegate : NSObject <UIApplicationDelegate> {
     UIWindow *window;
-    fayeiPhoneViewController *viewController;
+    FayeiPhoneViewController *viewController;
 }
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) IBOutlet fayeiPhoneViewController *viewController;
+@property (nonatomic, retain) IBOutlet FayeiPhoneViewController *viewController;
 
 @end
 

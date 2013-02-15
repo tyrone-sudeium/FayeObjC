@@ -6,9 +6,9 @@
 //  Copyright 2011 __MyCompanyName__. All rights reserved.
 //
 
-#import "fayeiPhoneViewController.h"
+#import "FayeiPhoneViewController.h"
 
-@implementation fayeiPhoneViewController
+@implementation FayeiPhoneViewController
 
 @synthesize faye;
 @synthesize connected;

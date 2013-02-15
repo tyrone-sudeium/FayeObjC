@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "FayeClient.h"
 
-@interface fayeiPhoneViewController : UIViewController <FayeClientDelegate, UITextFieldDelegate> {
+@interface FayeiPhoneViewController : UIViewController <FayeClientDelegate, UITextFieldDelegate> {
   FayeClient *faye;
   BOOL connected;
   UITextField *messageTextField;

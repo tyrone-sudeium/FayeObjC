@@ -6,10 +6,10 @@
 //  Copyright 2011 __MyCompanyName__. All rights reserved.
 //
 
-#import "fayeiPhoneAppDelegate.h"
-#import "fayeiPhoneViewController.h"
+#import "FayeiPhoneAppDelegate.h"
+#import "FayeiPhoneViewController.h"
 
-@implementation fayeiPhoneAppDelegate
+@implementation FayeiPhoneAppDelegate
 
 @synthesize window;
 @synthesize viewController;

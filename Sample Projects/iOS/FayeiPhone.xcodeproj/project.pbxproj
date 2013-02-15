@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1D3623260D0F684500981E51 /* fayeiPhoneAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* fayeiPhoneAppDelegate.m */; };
+		1D3623260D0F684500981E51 /* FayeiPhoneAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* FayeiPhoneAppDelegate.m */; };
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765A40DF7441C002DB57D /* CoreGraphics.framework */; };
-		2899E5220DE3E06400AC0155 /* fayeiPhoneViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2899E5210DE3E06400AC0155 /* fayeiPhoneViewController.xib */; };
+		2899E5220DE3E06400AC0155 /* FayeiPhoneViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2899E5210DE3E06400AC0155 /* FayeiPhoneViewController.xib */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
-		28D7ACF80DDB3853001CB0EB /* fayeiPhoneViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* fayeiPhoneViewController.m */; };
+		28D7ACF80DDB3853001CB0EB /* FayeiPhoneViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* FayeiPhoneViewController.m */; };
 		69658BAE1321CAB700151F3D /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69658BAD1321CAB700151F3D /* CFNetwork.framework */; };
 		8B11729416CE591000A85D43 /* libFayeClient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B11729316CE58AD00A85D43 /* libFayeClient.a */; };
 		8B1172AA16CE5A7D00A85D43 /* libSocketRocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1172A316CE5A7800A85D43 /* libSocketRocket.a */; };
@@ -62,23 +62,23 @@
 
 /* Begin PBXFileReference section */
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		1D3623240D0F684500981E51 /* fayeiPhoneAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fayeiPhoneAppDelegate.h; sourceTree = "<group>"; };
-		1D3623250D0F684500981E51 /* fayeiPhoneAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = fayeiPhoneAppDelegate.m; sourceTree = "<group>"; };
-		1D6058910D05DD3D006BFB54 /* fayeiPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = fayeiPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D3623240D0F684500981E51 /* FayeiPhoneAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeiPhoneAppDelegate.h; sourceTree = "<group>"; };
+		1D3623250D0F684500981E51 /* FayeiPhoneAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FayeiPhoneAppDelegate.m; sourceTree = "<group>"; };
+		1D6058910D05DD3D006BFB54 /* FayeiPhone.temp_caseinsensitive_rename.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FayeiPhone.temp_caseinsensitive_rename.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		288765A40DF7441C002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		2899E5210DE3E06400AC0155 /* fayeiPhoneViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = fayeiPhoneViewController.xib; sourceTree = "<group>"; };
+		2899E5210DE3E06400AC0155 /* FayeiPhoneViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = FayeiPhoneViewController.xib; sourceTree = "<group>"; };
 		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainWindow.xib; sourceTree = "<group>"; };
-		28D7ACF60DDB3853001CB0EB /* fayeiPhoneViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fayeiPhoneViewController.h; sourceTree = "<group>"; };
-		28D7ACF70DDB3853001CB0EB /* fayeiPhoneViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = fayeiPhoneViewController.m; sourceTree = "<group>"; };
+		28D7ACF60DDB3853001CB0EB /* FayeiPhoneViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeiPhoneViewController.h; sourceTree = "<group>"; };
+		28D7ACF70DDB3853001CB0EB /* FayeiPhoneViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FayeiPhoneViewController.m; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		32CA4F630368D1EE00C91783 /* fayeiPhone_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fayeiPhone_Prefix.pch; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* FayeiPhone_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeiPhone_Prefix.pch; sourceTree = "<group>"; };
 		69658BAD1321CAB700151F3D /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		8B11728D16CE58AC00A85D43 /* FayeClient.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = FayeClient.xcodeproj; path = ../../FayeClient/FayeClient.xcodeproj; sourceTree = "<group>"; };
 		8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SocketRocket.xcodeproj; path = ../../SocketRocket/SocketRocket.xcodeproj; sourceTree = "<group>"; };
 		8B1172AB16CE5AA800A85D43 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		8B1172AD16CE5AD400A85D43 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
-		8D1107310486CEB800E47090 /* fayeiPhone-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "fayeiPhone-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* FayeiPhone-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "FayeiPhone-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,10 +103,10 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				1D3623240D0F684500981E51 /* fayeiPhoneAppDelegate.h */,
-				1D3623250D0F684500981E51 /* fayeiPhoneAppDelegate.m */,
-				28D7ACF60DDB3853001CB0EB /* fayeiPhoneViewController.h */,
-				28D7ACF70DDB3853001CB0EB /* fayeiPhoneViewController.m */,
+				1D3623240D0F684500981E51 /* FayeiPhoneAppDelegate.h */,
+				1D3623250D0F684500981E51 /* FayeiPhoneAppDelegate.m */,
+				28D7ACF60DDB3853001CB0EB /* FayeiPhoneViewController.h */,
+				28D7ACF70DDB3853001CB0EB /* FayeiPhoneViewController.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -114,7 +114,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1D6058910D05DD3D006BFB54 /* fayeiPhone.app */,
+				1D6058910D05DD3D006BFB54 /* FayeiPhone.temp_caseinsensitive_rename.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -135,7 +135,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				32CA4F630368D1EE00C91783 /* fayeiPhone_Prefix.pch */,
+				32CA4F630368D1EE00C91783 /* FayeiPhone_Prefix.pch */,
 				29B97316FDCFA39411CA2CEA /* main.m */,
 			);
 			name = "Other Sources";
@@ -144,9 +144,9 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				2899E5210DE3E06400AC0155 /* fayeiPhoneViewController.xib */,
+				2899E5210DE3E06400AC0155 /* FayeiPhoneViewController.xib */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
-				8D1107310486CEB800E47090 /* fayeiPhone-Info.plist */,
+				8D1107310486CEB800E47090 /* FayeiPhone-Info.plist */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -195,9 +195,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1D6058900D05DD3D006BFB54 /* fayeiPhone */ = {
+		1D6058900D05DD3D006BFB54 /* FayeiPhone */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "fayeiPhone" */;
+			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "FayeiPhone" */;
 			buildPhases = (
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
@@ -207,9 +207,9 @@
 			);
 			dependencies = (
 			);
-			name = fayeiPhone;
+			name = FayeiPhone;
 			productName = fayeiPhone;
-			productReference = 1D6058910D05DD3D006BFB54 /* fayeiPhone.app */;
+			productReference = 1D6058910D05DD3D006BFB54 /* FayeiPhone.temp_caseinsensitive_rename.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -217,7 +217,7 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "fayeiPhone" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "FayeiPhone" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -241,7 +241,7 @@
 			);
 			projectRoot = "";
 			targets = (
-				1D6058900D05DD3D006BFB54 /* fayeiPhone */,
+				1D6058900D05DD3D006BFB54 /* FayeiPhone */,
 			);
 		};
 /* End PBXProject section */
@@ -290,7 +290,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
-				2899E5220DE3E06400AC0155 /* fayeiPhoneViewController.xib in Resources */,
+				2899E5220DE3E06400AC0155 /* FayeiPhoneViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,8 +302,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
-				1D3623260D0F684500981E51 /* fayeiPhoneAppDelegate.m in Sources */,
-				28D7ACF80DDB3853001CB0EB /* fayeiPhoneViewController.m in Sources */,
+				1D3623260D0F684500981E51 /* FayeiPhoneAppDelegate.m in Sources */,
+				28D7ACF80DDB3853001CB0EB /* FayeiPhoneViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -317,14 +317,14 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = fayeiPhone_Prefix.pch;
+				GCC_PREFIX_HEADER = FayeiPhone_Prefix.pch;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(PROJECT_DIR)/../../FayeClient\"/**",
 					"\"$(PROJECT_DIR)/../../SocketRocket/SocketRocket\"",
 				);
-				INFOPLIST_FILE = "fayeiPhone-Info.plist";
-				PRODUCT_NAME = fayeiPhone;
+				INFOPLIST_FILE = "FayeiPhone-Info.plist";
+				PRODUCT_NAME = FayeiPhone.temp_caseinsensitive_rename;
 			};
 			name = Debug;
 		};
@@ -333,14 +333,14 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = fayeiPhone_Prefix.pch;
+				GCC_PREFIX_HEADER = FayeiPhone_Prefix.pch;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(PROJECT_DIR)/../../FayeClient\"/**",
 					"\"$(PROJECT_DIR)/../../SocketRocket/SocketRocket\"",
 				);
-				INFOPLIST_FILE = "fayeiPhone-Info.plist";
-				PRODUCT_NAME = fayeiPhone;
+				INFOPLIST_FILE = "FayeiPhone-Info.plist";
+				PRODUCT_NAME = FayeiPhone.temp_caseinsensitive_rename;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -377,7 +377,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "fayeiPhone" */ = {
+		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "FayeiPhone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1D6058940D05DD3E006BFB54 /* Debug */,
@@ -386,7 +386,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "fayeiPhone" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "FayeiPhone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,
