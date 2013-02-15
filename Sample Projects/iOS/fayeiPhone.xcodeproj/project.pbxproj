@@ -16,19 +16,49 @@
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
 		28D7ACF80DDB3853001CB0EB /* fayeiPhoneViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* fayeiPhoneViewController.m */; };
 		69658BAE1321CAB700151F3D /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69658BAD1321CAB700151F3D /* CFNetwork.framework */; };
-		8B11721616CE345300A85D43 /* NSDate-UTC.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B1171FE16CE345300A85D43 /* NSDate-UTC.m */; };
-		8B11721716CE345300A85D43 /* NSObject+PropertySupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720016CE345300A85D43 /* NSObject+PropertySupport.m */; };
-		8B11721816CE345300A85D43 /* NSString+InflectionSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720216CE345300A85D43 /* NSString+InflectionSupport.m */; };
-		8B11721916CE345300A85D43 /* ObjectiveResourceDateFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720416CE345300A85D43 /* ObjectiveResourceDateFormatter.m */; };
-		8B11721A16CE345300A85D43 /* NSData+Serialize.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720716CE345300A85D43 /* NSData+Serialize.m */; };
-		8B11721B16CE345300A85D43 /* NSDate+Serialize.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720916CE345300A85D43 /* NSDate+Serialize.m */; };
-		8B11721C16CE345300A85D43 /* NSDictionary+KeyTranslation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720B16CE345300A85D43 /* NSDictionary+KeyTranslation.m */; };
-		8B11721D16CE345300A85D43 /* NSObject+Serialize.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720D16CE345300A85D43 /* NSObject+Serialize.m */; };
-		8B11721E16CE345300A85D43 /* NSString+Serialize.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11720F16CE345300A85D43 /* NSString+Serialize.m */; };
-		8B11721F16CE345300A85D43 /* FayeChannel.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11721116CE345300A85D43 /* FayeChannel.m */; };
-		8B11722016CE345300A85D43 /* FayeClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11721316CE345300A85D43 /* FayeClient.m */; };
-		8B11722116CE345300A85D43 /* FayeMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B11721516CE345300A85D43 /* FayeMessage.m */; };
+		8B11729416CE591000A85D43 /* libFayeClient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B11729316CE58AD00A85D43 /* libFayeClient.a */; };
+		8B1172AA16CE5A7D00A85D43 /* libSocketRocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1172A316CE5A7800A85D43 /* libSocketRocket.a */; };
+		8B1172AC16CE5AA800A85D43 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1172AB16CE5AA800A85D43 /* Security.framework */; };
+		8B1172AE16CE5AD400A85D43 /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1172AD16CE5AD400A85D43 /* libicucore.dylib */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8B11729216CE58AD00A85D43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B11728D16CE58AC00A85D43 /* FayeClient.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 8B11723D16CE54DB00A85D43;
+			remoteInfo = FayeClient;
+		};
+		8B1172A216CE5A7800A85D43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F6B2082D1450F597009315AF;
+			remoteInfo = SocketRocket;
+		};
+		8B1172A416CE5A7800A85D43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F668C880153E91210044DBAC;
+			remoteInfo = SocketRocketOSX;
+		};
+		8B1172A616CE5A7800A85D43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F6BDA802145900D200FE3253;
+			remoteInfo = SRWebSocketTests;
+		};
+		8B1172A816CE5A7800A85D43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F62417E314D52F3C003CE997;
+			remoteInfo = TestChat;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -44,30 +74,10 @@
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* fayeiPhone_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fayeiPhone_Prefix.pch; sourceTree = "<group>"; };
 		69658BAD1321CAB700151F3D /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
-		8B1171FD16CE345300A85D43 /* NSDate-UTC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDate-UTC.h"; sourceTree = "<group>"; };
-		8B1171FE16CE345300A85D43 /* NSDate-UTC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDate-UTC.m"; sourceTree = "<group>"; };
-		8B1171FF16CE345300A85D43 /* NSObject+PropertySupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+PropertySupport.h"; sourceTree = "<group>"; };
-		8B11720016CE345300A85D43 /* NSObject+PropertySupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+PropertySupport.m"; sourceTree = "<group>"; };
-		8B11720116CE345300A85D43 /* NSString+InflectionSupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+InflectionSupport.h"; sourceTree = "<group>"; };
-		8B11720216CE345300A85D43 /* NSString+InflectionSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+InflectionSupport.m"; sourceTree = "<group>"; };
-		8B11720316CE345300A85D43 /* ObjectiveResourceDateFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjectiveResourceDateFormatter.h; sourceTree = "<group>"; };
-		8B11720416CE345300A85D43 /* ObjectiveResourceDateFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ObjectiveResourceDateFormatter.m; sourceTree = "<group>"; };
-		8B11720616CE345300A85D43 /* NSData+Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Serialize.h"; sourceTree = "<group>"; };
-		8B11720716CE345300A85D43 /* NSData+Serialize.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Serialize.m"; sourceTree = "<group>"; };
-		8B11720816CE345300A85D43 /* NSDate+Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDate+Serialize.h"; sourceTree = "<group>"; };
-		8B11720916CE345300A85D43 /* NSDate+Serialize.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDate+Serialize.m"; sourceTree = "<group>"; };
-		8B11720A16CE345300A85D43 /* NSDictionary+KeyTranslation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+KeyTranslation.h"; sourceTree = "<group>"; };
-		8B11720B16CE345300A85D43 /* NSDictionary+KeyTranslation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+KeyTranslation.m"; sourceTree = "<group>"; };
-		8B11720C16CE345300A85D43 /* NSObject+Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+Serialize.h"; sourceTree = "<group>"; };
-		8B11720D16CE345300A85D43 /* NSObject+Serialize.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Serialize.m"; sourceTree = "<group>"; };
-		8B11720E16CE345300A85D43 /* NSString+Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Serialize.h"; sourceTree = "<group>"; };
-		8B11720F16CE345300A85D43 /* NSString+Serialize.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Serialize.m"; sourceTree = "<group>"; };
-		8B11721016CE345300A85D43 /* FayeChannel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeChannel.h; sourceTree = "<group>"; };
-		8B11721116CE345300A85D43 /* FayeChannel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FayeChannel.m; sourceTree = "<group>"; };
-		8B11721216CE345300A85D43 /* FayeClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeClient.h; sourceTree = "<group>"; };
-		8B11721316CE345300A85D43 /* FayeClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FayeClient.m; sourceTree = "<group>"; };
-		8B11721416CE345300A85D43 /* FayeMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FayeMessage.h; sourceTree = "<group>"; };
-		8B11721516CE345300A85D43 /* FayeMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FayeMessage.m; sourceTree = "<group>"; };
+		8B11728D16CE58AC00A85D43 /* FayeClient.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = FayeClient.xcodeproj; path = ../../FayeClient/FayeClient.xcodeproj; sourceTree = "<group>"; };
+		8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SocketRocket.xcodeproj; path = ../../SocketRocket/SocketRocket.xcodeproj; sourceTree = "<group>"; };
+		8B1172AB16CE5AA800A85D43 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		8B1172AD16CE5AD400A85D43 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* fayeiPhone-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "fayeiPhone-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -76,6 +86,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B1172AE16CE5AD400A85D43 /* libicucore.dylib in Frameworks */,
+				8B1172AC16CE5AA800A85D43 /* Security.framework in Frameworks */,
+				8B1172AA16CE5A7D00A85D43 /* libSocketRocket.a in Frameworks */,
+				8B11729416CE591000A85D43 /* libFayeClient.a in Frameworks */,
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
 				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
 				288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */,
@@ -89,7 +103,6 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				8B1171FB16CE345300A85D43 /* FayeClient */,
 				1D3623240D0F684500981E51 /* fayeiPhoneAppDelegate.h */,
 				1D3623250D0F684500981E51 /* fayeiPhoneAppDelegate.m */,
 				28D7ACF60DDB3853001CB0EB /* fayeiPhoneViewController.h */,
@@ -109,6 +122,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				8B11728C16CE58A400A85D43 /* FayeClient */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -140,60 +154,42 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
-				1D30AB110D05D00D00671497 /* Foundation.framework */,
-				288765A40DF7441C002DB57D /* CoreGraphics.framework */,
 				69658BAD1321CAB700151F3D /* CFNetwork.framework */,
+				288765A40DF7441C002DB57D /* CoreGraphics.framework */,
+				1D30AB110D05D00D00671497 /* Foundation.framework */,
+				8B1172AD16CE5AD400A85D43 /* libicucore.dylib */,
+				8B1172AB16CE5AA800A85D43 /* Security.framework */,
+				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		8B1171FB16CE345300A85D43 /* FayeClient */ = {
+		8B11728C16CE58A400A85D43 /* FayeClient */ = {
 			isa = PBXGroup;
 			children = (
-				8B1171FC16CE345300A85D43 /* Extensions */,
-				8B11721016CE345300A85D43 /* FayeChannel.h */,
-				8B11721116CE345300A85D43 /* FayeChannel.m */,
-				8B11721216CE345300A85D43 /* FayeClient.h */,
-				8B11721316CE345300A85D43 /* FayeClient.m */,
-				8B11721416CE345300A85D43 /* FayeMessage.h */,
-				8B11721516CE345300A85D43 /* FayeMessage.m */,
+				8B11728D16CE58AC00A85D43 /* FayeClient.xcodeproj */,
+				8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */,
 			);
 			name = FayeClient;
-			path = ../../../FayeClient;
 			sourceTree = "<group>";
 		};
-		8B1171FC16CE345300A85D43 /* Extensions */ = {
+		8B11728E16CE58AC00A85D43 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8B1171FD16CE345300A85D43 /* NSDate-UTC.h */,
-				8B1171FE16CE345300A85D43 /* NSDate-UTC.m */,
-				8B1171FF16CE345300A85D43 /* NSObject+PropertySupport.h */,
-				8B11720016CE345300A85D43 /* NSObject+PropertySupport.m */,
-				8B11720116CE345300A85D43 /* NSString+InflectionSupport.h */,
-				8B11720216CE345300A85D43 /* NSString+InflectionSupport.m */,
-				8B11720316CE345300A85D43 /* ObjectiveResourceDateFormatter.h */,
-				8B11720416CE345300A85D43 /* ObjectiveResourceDateFormatter.m */,
-				8B11720516CE345300A85D43 /* Serialize */,
+				8B11729316CE58AD00A85D43 /* libFayeClient.a */,
 			);
-			path = Extensions;
+			name = Products;
 			sourceTree = "<group>";
 		};
-		8B11720516CE345300A85D43 /* Serialize */ = {
+		8B11729C16CE5A7800A85D43 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8B11720616CE345300A85D43 /* NSData+Serialize.h */,
-				8B11720716CE345300A85D43 /* NSData+Serialize.m */,
-				8B11720816CE345300A85D43 /* NSDate+Serialize.h */,
-				8B11720916CE345300A85D43 /* NSDate+Serialize.m */,
-				8B11720A16CE345300A85D43 /* NSDictionary+KeyTranslation.h */,
-				8B11720B16CE345300A85D43 /* NSDictionary+KeyTranslation.m */,
-				8B11720C16CE345300A85D43 /* NSObject+Serialize.h */,
-				8B11720D16CE345300A85D43 /* NSObject+Serialize.m */,
-				8B11720E16CE345300A85D43 /* NSString+Serialize.h */,
-				8B11720F16CE345300A85D43 /* NSString+Serialize.m */,
+				8B1172A316CE5A7800A85D43 /* libSocketRocket.a */,
+				8B1172A516CE5A7800A85D43 /* SocketRocket.framework */,
+				8B1172A716CE5A7800A85D43 /* SRWebSocketTests.octest */,
+				8B1172A916CE5A7800A85D43 /* TestChat.app */,
 			);
-			path = Serialize;
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -233,12 +229,60 @@
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 8B11728E16CE58AC00A85D43 /* Products */;
+					ProjectRef = 8B11728D16CE58AC00A85D43 /* FayeClient.xcodeproj */;
+				},
+				{
+					ProductGroup = 8B11729C16CE5A7800A85D43 /* Products */;
+					ProjectRef = 8B11729B16CE5A7800A85D43 /* SocketRocket.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				1D6058900D05DD3D006BFB54 /* fayeiPhone */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		8B11729316CE58AD00A85D43 /* libFayeClient.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libFayeClient.a;
+			remoteRef = 8B11729216CE58AD00A85D43 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8B1172A316CE5A7800A85D43 /* libSocketRocket.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libSocketRocket.a;
+			remoteRef = 8B1172A216CE5A7800A85D43 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8B1172A516CE5A7800A85D43 /* SocketRocket.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SocketRocket.framework;
+			remoteRef = 8B1172A416CE5A7800A85D43 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8B1172A716CE5A7800A85D43 /* SRWebSocketTests.octest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = SRWebSocketTests.octest;
+			remoteRef = 8B1172A616CE5A7800A85D43 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8B1172A916CE5A7800A85D43 /* TestChat.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = TestChat.app;
+			remoteRef = 8B1172A816CE5A7800A85D43 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1D60588D0D05DD3D006BFB54 /* Resources */ = {
@@ -260,18 +304,6 @@
 				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
 				1D3623260D0F684500981E51 /* fayeiPhoneAppDelegate.m in Sources */,
 				28D7ACF80DDB3853001CB0EB /* fayeiPhoneViewController.m in Sources */,
-				8B11721616CE345300A85D43 /* NSDate-UTC.m in Sources */,
-				8B11721716CE345300A85D43 /* NSObject+PropertySupport.m in Sources */,
-				8B11721816CE345300A85D43 /* NSString+InflectionSupport.m in Sources */,
-				8B11721916CE345300A85D43 /* ObjectiveResourceDateFormatter.m in Sources */,
-				8B11721A16CE345300A85D43 /* NSData+Serialize.m in Sources */,
-				8B11721B16CE345300A85D43 /* NSDate+Serialize.m in Sources */,
-				8B11721C16CE345300A85D43 /* NSDictionary+KeyTranslation.m in Sources */,
-				8B11721D16CE345300A85D43 /* NSObject+Serialize.m in Sources */,
-				8B11721E16CE345300A85D43 /* NSString+Serialize.m in Sources */,
-				8B11721F16CE345300A85D43 /* FayeChannel.m in Sources */,
-				8B11722016CE345300A85D43 /* FayeClient.m in Sources */,
-				8B11722116CE345300A85D43 /* FayeMessage.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,17 +313,17 @@
 		1D6058940D05DD3E006BFB54 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = fayeiPhone_Prefix.pch;
-				INFOPLIST_FILE = "fayeiPhone-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/Classes/libYAJLIPhone_40Compatible\"",
+					"\"$(PROJECT_DIR)/../../FayeClient\"/**",
+					"\"$(PROJECT_DIR)/../../SocketRocket/SocketRocket\"",
 				);
+				INFOPLIST_FILE = "fayeiPhone-Info.plist";
 				PRODUCT_NAME = fayeiPhone;
 			};
 			name = Debug;
@@ -299,15 +331,15 @@
 		1D6058950D05DD3E006BFB54 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = fayeiPhone_Prefix.pch;
-				INFOPLIST_FILE = "fayeiPhone-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/Classes/libYAJLIPhone_40Compatible\"",
+					"\"$(PROJECT_DIR)/../../FayeClient\"/**",
+					"\"$(PROJECT_DIR)/../../SocketRocket/SocketRocket\"",
 				);
+				INFOPLIST_FILE = "fayeiPhone-Info.plist";
 				PRODUCT_NAME = fayeiPhone;
 				VALIDATE_PRODUCT = YES;
 			};

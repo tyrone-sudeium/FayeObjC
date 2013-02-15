@@ -2,6 +2,8 @@
 
 fayeMac/build/
 fayeiPhone/build/
+Pods/
+Podfile.lock
 
 *.pbxuser
 *.perspective

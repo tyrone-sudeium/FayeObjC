@@ -23,4 +23,5 @@ Pod::Spec.new do |s|
   s.source_files = 'FayeClient/**/*.{h,m}'
   s.framework = 'CFNetwork'
   s.requires_arc = true
+  s.dependency 'SocketRocket', '~> 0.2'
 end
