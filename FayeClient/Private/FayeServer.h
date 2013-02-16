@@ -9,8 +9,8 @@
 #import <Foundation/Foundation.h>
 
 typedef NS_ENUM(NSInteger, FayeServerConnectionType) {
-    FayeServerConnectionTypeSecureWebsocket,
-    FayeServerConnectionTypeWebsocket,
+    FayeServerConnectionTypeSecureWebSocket,
+    FayeServerConnectionTypeWebSocket,
     FayeServerConnectionTypeSecureLongPolling,
     FayeServerConnectionTypeLongPolling
 };
@@ -20,7 +20,13 @@ typedef NS_ENUM(NSInteger, FayeServerConnectionType) {
 @property (nonatomic, readonly, assign) FayeServerConnectionType connectionType;
 @property (nonatomic, assign) NSInteger failures;
 @property (nonatomic, copy) NSDictionary *extension;
+@property (nonatomic, assign) NSInteger sortIndex;
 
 + (instancetype) fayeServerWithURL: (NSURL*) url;
+
+- (NSComparisonResult) compareServer: (FayeServer*) otherServer;
+
+- (BOOL) connectsWithWebSockets;
+- (BOOL) connectsWithLongPolling;
 
 @end

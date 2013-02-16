@@ -42,6 +42,7 @@ typedef NS_ENUM(NSInteger, FayeChannelSubscriptionStatus) {
 // NOTE, this message handler happens OFF THE MAIN THREAD
 @property (nonatomic, copy) FayeClientChannelMessageHandlerBlock messageHandlerBlock;
 @property (nonatomic, assign) FayeChannelSubscriptionStatus subscriptionStatus;
+@property (nonatomic, copy) NSDictionary *extension;
 
 + (FayeChannel*) channelWithPath: (NSString*) path;
 

@@ -37,20 +37,20 @@
 
 @interface FayeMessage : NSObject
 
-@property (strong) NSString *channel;
-@property (strong) NSString *clientId;
-@property (strong) NSNumber *successful;
-@property (strong) NSNumber *authSuccessful;
-@property (strong) NSString *version;
-@property (strong) NSString *minimumVersion;  
-@property (strong) NSArray *supportedConnectionTypes;
-@property (strong) NSDictionary *advice;
-@property (strong) NSString *error;
-@property (strong) NSString *subscription;
-@property (strong) NSDate *timestamp;
-@property (strong) NSDictionary *data;
-@property (strong) NSDictionary *ext;
-@property (strong) NSString *fayeId;
+@property (nonatomic, copy) NSString *channel;
+@property (nonatomic, copy) NSString *clientId;
+@property (nonatomic, copy) NSNumber *successful;
+@property (nonatomic, copy) NSNumber *authSuccessful;
+@property (nonatomic, copy) NSString *version;
+@property (nonatomic, copy) NSString *minimumVersion;  
+@property (nonatomic, copy) NSArray *supportedConnectionTypes;
+@property (nonatomic, copy) NSDictionary *advice;
+@property (nonatomic, copy) NSString *error;
+@property (nonatomic, copy) NSString *subscription;
+@property (nonatomic, strong) NSDate *timestamp;
+@property (nonatomic, copy) NSDictionary *data;
+@property (nonatomic, copy) NSDictionary *ext;
+@property (nonatomic, copy) NSString *fayeId;
 
 - (id) initWithDict:(NSDictionary *)dict;
 

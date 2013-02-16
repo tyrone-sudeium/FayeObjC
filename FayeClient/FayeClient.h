@@ -25,11 +25,8 @@
 //  FayeClient.h
 //  FayeObjC
 //
-#ifdef __MAC_OS_X_VERSION_MAX_ALLOWED
-#import <Cocoa/Cocoa.h>
-#else
-#import <UIKit/UIKit.h>
-#endif
+
+#import <Foundation/Foundation.h>
 
 #define kFayeErrorDomain @"FayeErrorDomain"
 
@@ -42,7 +39,7 @@ extern NSString * const FayeClientUnsubscribeChannel;
 
 @class FayeClient;
 typedef void(^FayeClientChannelMessageHandlerBlock)(FayeClient *client, NSString* channelPath, NSDictionary *messageDict);
-typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client);
+typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSError *error);
 
 @protocol FayeClientDelegate <NSObject>
 @optional
@@ -58,14 +55,25 @@ subscribedToChannel: (NSString*) channel;
           toChannel: (NSString*) channel;
 @end
 
+typedef NS_ENUM(NSInteger, FayeClientConnectionStatus) {
+    FayeClientConnectionStatusDisconnected,
+    FayeClientConnectionStatusConnecting,
+    FayeClientConnectionStatusConnected,
+    FayeClientConnectionStatusDisconnecting
+};
+
 @interface FayeClient : NSObject
 @property (nonatomic, retain) NSString *clientID;
 @property (nonatomic, weak) id <FayeClientDelegate> delegate;
-@property (nonatomic, readonly) NSArray *subscribedChannels;
+@property (nonatomic, readonly) NSSet *subscribedChannels;
 @property (nonatomic, copy) NSDictionary *extension;
+@property (nonatomic, copy) NSDictionary *handshakeExtension;
+@property (nonatomic, copy) NSDictionary *connectExtension;
+@property (nonatomic, assign) NSTimeInterval timeout;
+@property (nonatomic, readonly, assign) FayeClientConnectionStatus connectionStatus;
 @property (nonatomic, assign) BOOL debug;
 
-+ (FayeClient*) fayeClientWithURL: (NSURL*) url;
++ (instancetype) fayeClientWithURL: (NSURL*) url;
 
 - (void) addServerWithURL: (NSURL*) url;
 
@@ -77,8 +85,10 @@ subscribedToChannel: (NSString*) channel;
 - (void) subscribeToChannel: (NSString *) channel
              messageHandler: (FayeClientChannelMessageHandlerBlock) handler;
 - (void) subscribeToChannel: (NSString *) channel
-             messageHandler: (FayeClientChannelMessageHandlerBlock) handler
-          completionHandler: (dispatch_block_t) handler;
+             messageHandler: (FayeClientChannelMessageHandlerBlock) messageHandler
+          completionHandler: (dispatch_block_t) completionHandler;
+- (void) setExtension: (NSDictionary*) extension
+           forChannel: (NSString*) channel;
 
 - (void) unsubscribeFromChannel: (NSString*) channel;
 - (void) unsubscribeFromChannel: (NSString*) channel
@@ -93,8 +103,5 @@ subscribedToChannel: (NSString*) channel;
            toChannel: (NSString*) channel
            extension: (NSDictionary*) extension
    completionHandler: (dispatch_block_t) handler;
-
-- (void) setExtension: (NSDictionary*) extension
-           forChannel: (NSString*) channel;
 
 @end

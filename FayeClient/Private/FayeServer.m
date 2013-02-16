@@ -21,9 +21,9 @@
 {
     _url = url;
     if ([[url scheme] isEqualToString: @"wss"]) {
-        _connectionType = FayeServerConnectionTypeSecureWebsocket;
+        _connectionType = FayeServerConnectionTypeSecureWebSocket;
     } else if ([[url scheme] isEqualToString: @"ws"]) {
-        _connectionType = FayeServerConnectionTypeWebsocket;
+        _connectionType = FayeServerConnectionTypeWebSocket;
     } else if ([[url scheme] isEqualToString: @"https"]) {
         _connectionType = FayeServerConnectionTypeSecureLongPolling;
     } else if ([[url scheme] isEqualToString: @"http"]) {
@@ -31,6 +31,31 @@
     } else {
         [NSException raise: NSInvalidArgumentException format: @"Unrecognised Faye URL scheme: '%@'", [url scheme]];
     }
+}
+
+- (NSComparisonResult) compareServer:(FayeServer *)otherServer
+{
+    NSComparisonResult byFailures = [@(self.failures) compare: @(otherServer.failures)];
+    if (byFailures == NSOrderedSame) {
+        NSComparisonResult byConnectionType = [@(self.connectionType) compare: @(otherServer.connectionType)];
+        if (byConnectionType == NSOrderedSame) {
+            return [@(self.sortIndex) compare: @(otherServer.sortIndex)];
+        } else {
+            return byConnectionType;
+        }
+    } else {
+        return byFailures;
+    }
+}
+
+- (BOOL) connectsWithLongPolling
+{
+    return _connectionType == FayeServerConnectionTypeLongPolling || _connectionType == FayeServerConnectionTypeSecureLongPolling;
+}
+
+- (BOOL) connectsWithWebSockets
+{
+    return _connectionType == FayeServerConnectionTypeWebSocket || _connectionType == FayeServerConnectionTypeSecureWebSocket;
 }
 
 @end

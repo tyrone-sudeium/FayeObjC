@@ -30,6 +30,15 @@
 
 @implementation FayeChannel
 
+- (id) init
+{
+    self = [super init];
+    if (self) {
+        self.extension = @{};
+    }
+    return self;
+}
+
 + (FayeChannel*) channelWithPath:(NSString *)path
 {
     FayeChannel *channel = [FayeChannel new];
