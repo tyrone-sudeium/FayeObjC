@@ -1,6 +1,7 @@
 /* The MIT License
  
  Copyright (c) 2011 Paul Crawford
+ Copyright (c) 2013 Tyrone Trevorrow
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -30,16 +31,6 @@
 #import <UIKit/UIKit.h>
 #endif
 
-#import "SRWebSocket.h"
-#import "FayeChannel.h"
-
-enum _fayeStates {
-  kWebSocketDisconnected,
-  kWebSocketConnected,
-  kFayeDisconnected,
-  kFayeConnected  
-} fayeStates;
-
 #ifdef FAYEOBJC_DEBUGGING
 #   define FAYE_DLog(fmt, ...) {NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);}
 #else
@@ -49,17 +40,19 @@ enum _fayeStates {
 #define kFayeErrorDomain @"FayeErrorDomain"
 
 // Bayeux protocol channels
-#define HANDSHAKE_CHANNEL @"/meta/handshake"
-#define CONNECT_CHANNEL @"/meta/connect"
-#define DISCONNECT_CHANNEL @"/meta/disconnect"
-#define SUBSCRIBE_CHANNEL @"/meta/subscribe"
-#define UNSUBSCRIBE_CHANNEL @"/meta/unsubscribe"
+extern NSString * const FayeClientHandshakeChannel;
+extern NSString * const FayeClientConnectChannel;
+extern NSString * const FayeClientDisconnectChannel;
+extern NSString * const FayeClientSubscribeChannel;
+extern NSString * const FayeClientUnsubscribeChannel;
 
 @class FayeClient;
+typedef void(^FayeClientChannelMessageHandlerBlock)(FayeClient *client, NSString* channelPath, NSDictionary *messageDict);
+typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client);
 
 @protocol FayeClientDelegate <NSObject>
 
-- (void) fayeClient: (FayeClient*) client didReceiveMessage:(NSDictionary *)messageDict forChannel: (FayeChannel*) channel;
+- (void) fayeClient: (FayeClient*) client didReceiveMessage:(NSDictionary *)messageDict forChannel: (NSString*) channel;
 - (void) fayeClientDidConnectToServer: (FayeClient*) client;
 - (void) fayeClientDidDisconnectFromServer: (FayeClient*) client;
 - (void) fayeClient: (FayeClient*) client didFailToConnectToServerWithError: (NSError*) error;
@@ -68,31 +61,20 @@ enum _fayeStates {
 @end
 
 
-@interface FayeClient : NSObject <SRWebSocketDelegate> {
-    NSString *fayeURLString;
-    SRWebSocket* webSocket;
-    NSString *fayeClientId;
-    BOOL webSocketConnected;  
-    NSString *activeSubChannel;
-@private
-    BOOL fayeConnected;  
-    NSDictionary *connectionExtension;
-}
-
-@property (nonatomic, retain) NSString *fayeURLString;
-@property (nonatomic, retain) SRWebSocket* webSocket;
-@property (nonatomic, retain) NSString *fayeClientId;
-@property (nonatomic, assign) BOOL webSocketConnected;
-@property (nonatomic, unsafe_unretained) id <FayeClientDelegate> delegate;
+@interface FayeClient : NSObject
+@property (nonatomic, retain) NSString *clientID;
+@property (nonatomic, weak) id <FayeClientDelegate> delegate;
 @property (nonatomic, readonly) NSArray *subscribedChannels;
+@property (nonatomic, assign) BOOL debug;
 
-- (id) initWithURLString:(NSString *)aFayeURLString;
-- (FayeChannel*) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler;
-- (void) unsubscribeFromChannel: (NSString*) channelPath;
-- (void) connectToServer;
-- (void) connectToServerWithExt:(NSDictionary *)extension;
-- (void) disconnectFromServer;
-- (void) sendMessage:(NSDictionary *)messageDict toChannel: (FayeChannel*) channel;
-- (void) sendMessage:(NSDictionary *)messageDict withExt:(NSDictionary *)extension toChannel: (FayeChannel*) channel;
+- (void) addServerWithURL: (NSURL*) url;
+
+//- (void) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler;
+//- (void) unsubscribeFromChannel: (NSString*) channelPath;
+//- (void) connectToServer;
+//- (void) connectToServerWithExt:(NSDictionary *)extension;
+//- (void) disconnectFromServer;
+//- (void) sendMessage:(NSDictionary *)messageDict toChannel: (FayeChannel*) channel;
+//- (void) sendMessage:(NSDictionary *)messageDict withExt:(NSDictionary *)extension toChannel: (FayeChannel*) channel;
 
 @end

@@ -1,6 +1,7 @@
 /* The MIT License
  
  Copyright (c) 2011 Paul Crawford
+ Copyright (c) 2013 Tyrone Trevorrow
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +21,20 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE. */
 
-#import <Foundation/Foundation.h>
+//
+//  FayeChannel.m
+//  FayeObjC
+//
 
+#import "FayeChannel.h"
 
-@interface NSData(Serialize)
+@implementation FayeChannel
 
-+ (NSString *) deserialize:(id)value;
-- (NSString *) serialize; 
++ (FayeChannel*) channelWithPath:(NSString *)path
+{
+    FayeChannel *channel = [FayeChannel new];
+    channel.channelPath = path;
+    return channel;
+}
 
 @end

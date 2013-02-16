@@ -1,6 +1,7 @@
 /* The MIT License
  
  Copyright (c) 2011 Paul Crawford
+ Copyright (c) 2013 Tyrone Trevorrow
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,11 +21,28 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE. */
 
+//
+//  FayeChannel.h
+//  FayeObjC
+//
+
 #import <Foundation/Foundation.h>
+#import "FayeClient.h"
 
+typedef NS_ENUM(NSInteger, FayeChannelSubscriptionStatus) {
+    FayeChannelSubscriptionStatusUnknown,
+    FayeChannelSubscriptionStatusUnsubscribed,
+    FayeChannelSubscriptionStatusSubscribing,
+    FayeChannelSubscriptionStatusSubscribed,
+    FayeChannelSubscriptionStatusUnsubscribing
+};
 
-@interface NSDate(UTC)
+@interface FayeChannel : NSObject
+@property (nonatomic, copy) NSString *channelPath;
+// NOTE, this message handler happens OFF THE MAIN THREAD
+@property (nonatomic, copy) FayeClientChannelMessageHandlerBlock messageHandlerBlock;
+@property (nonatomic, assign) FayeChannelSubscriptionStatus subscriptionStatus;
 
-- (NSDate *) convertToUTC;
++ (FayeChannel*) channelWithPath: (NSString*) path;
 
 @end

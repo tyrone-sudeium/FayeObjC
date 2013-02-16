@@ -1,6 +1,7 @@
 /* The MIT License
  
  Copyright (c) 2011 Paul Crawford
+ Copyright (c) 2013 Tyrone Trevorrow
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -34,22 +35,7 @@
  Represents the faye message structure
  */
 
-@interface FayeMessage : NSObject {
-  NSString *channel;
-  NSString *clientId;
-  NSNumber *successful;
-  NSNumber *authSuccessful;
-  NSString *version;
-  NSString *minimumVersion;  
-  NSArray *supportedConnectionTypes;
-  NSDictionary *advice;
-  NSString *error;
-  NSString *subscription;
-  NSDate *timestamp;
-  NSDictionary *data;
-  NSDictionary *ext;
-  NSString *fayeId; // converted from "id" in bayeux protocol
-}
+@interface FayeMessage : NSObject
 
 @property (strong) NSString *channel;
 @property (strong) NSString *clientId;
