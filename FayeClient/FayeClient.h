@@ -31,12 +31,6 @@
 #import <UIKit/UIKit.h>
 #endif
 
-#ifdef FAYEOBJC_DEBUGGING
-#   define FAYE_DLog(fmt, ...) {NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);}
-#else
-#   define FAYE_DLog(...) {}
-#endif
-
 #define kFayeErrorDomain @"FayeErrorDomain"
 
 // Bayeux protocol channels
@@ -51,30 +45,56 @@ typedef void(^FayeClientChannelMessageHandlerBlock)(FayeClient *client, NSString
 typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client);
 
 @protocol FayeClientDelegate <NSObject>
-
-- (void) fayeClient: (FayeClient*) client didReceiveMessage:(NSDictionary *)messageDict forChannel: (NSString*) channel;
-- (void) fayeClientDidConnectToServer: (FayeClient*) client;
-- (void) fayeClientDidDisconnectFromServer: (FayeClient*) client;
-- (void) fayeClient: (FayeClient*) client didFailToConnectToServerWithError: (NSError*) error;
-- (void) fayeClient: (FayeClient*) client didFailSubscriptionWithError: (NSError*) error;
-
+@optional
+- (void) fayeClientConnectionStatusChanged: (FayeClient*) client;
+- (void) fayeClient: (FayeClient*) client
+    receivedMessage: (NSDictionary*) message
+          onChannel: (NSString*) channelPath;
+- (void) fayeClient: (FayeClient*) client
+subscribedToChannel: (NSString*) channel;
+- (void) fayeClient: (FayeClient*) client unsubscribedFromChannel: (NSString*) channel;
+- (void) fayeClient: (FayeClient*) client
+        sentMessage: (NSDictionary*) message
+          toChannel: (NSString*) channel;
 @end
-
 
 @interface FayeClient : NSObject
 @property (nonatomic, retain) NSString *clientID;
 @property (nonatomic, weak) id <FayeClientDelegate> delegate;
 @property (nonatomic, readonly) NSArray *subscribedChannels;
+@property (nonatomic, copy) NSDictionary *extension;
 @property (nonatomic, assign) BOOL debug;
+
++ (FayeClient*) fayeClientWithURL: (NSURL*) url;
 
 - (void) addServerWithURL: (NSURL*) url;
 
-//- (void) subscribeToChannel: (NSString*) channelPath messageHandler: (FayeChannelMessageHandlerBlock) handler;
-//- (void) unsubscribeFromChannel: (NSString*) channelPath;
-//- (void) connectToServer;
-//- (void) connectToServerWithExt:(NSDictionary *)extension;
-//- (void) disconnectFromServer;
-//- (void) sendMessage:(NSDictionary *)messageDict toChannel: (FayeChannel*) channel;
-//- (void) sendMessage:(NSDictionary *)messageDict withExt:(NSDictionary *)extension toChannel: (FayeChannel*) channel;
+- (void) connect;
+- (void) connectWithConnectionStatusChangedHandler: (FayeClientConnectionStatusHandlerBlock) handler;
+- (void) disconnect;
+
+- (void) subscribeToChannel: (NSString*) channel;
+- (void) subscribeToChannel: (NSString *) channel
+             messageHandler: (FayeClientChannelMessageHandlerBlock) handler;
+- (void) subscribeToChannel: (NSString *) channel
+             messageHandler: (FayeClientChannelMessageHandlerBlock) handler
+          completionHandler: (dispatch_block_t) handler;
+
+- (void) unsubscribeFromChannel: (NSString*) channel;
+- (void) unsubscribeFromChannel: (NSString*) channel
+              completionHandler: (dispatch_block_t) handler;
+
+- (void) sendMessage: (NSDictionary*) message
+           toChannel: (NSString*) channel;
+- (void) sendMessage: (NSDictionary*) message
+           toChannel: (NSString*) channel
+           extension: (NSDictionary*) extension;
+- (void) sendMessage: (NSDictionary*) message
+           toChannel: (NSString*) channel
+           extension: (NSDictionary*) extension
+   completionHandler: (dispatch_block_t) handler;
+
+- (void) setExtension: (NSDictionary*) extension
+           forChannel: (NSString*) channel;
 
 @end
