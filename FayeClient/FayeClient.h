@@ -37,23 +37,13 @@ extern NSString * const FayeClientDisconnectChannel;
 extern NSString * const FayeClientSubscribeChannel;
 extern NSString * const FayeClientUnsubscribeChannel;
 
-@class FayeClient;
-typedef void(^FayeClientChannelMessageHandlerBlock)(FayeClient *client, NSString* channelPath, NSDictionary *messageDict);
-typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSError *error);
-
-@protocol FayeClientDelegate <NSObject>
-@optional
-- (void) fayeClientConnectionStatusChanged: (FayeClient*) client;
-- (void) fayeClient: (FayeClient*) client
-    receivedMessage: (NSDictionary*) message
-          onChannel: (NSString*) channelPath;
-- (void) fayeClient: (FayeClient*) client
-subscribedToChannel: (NSString*) channel;
-- (void) fayeClient: (FayeClient*) client unsubscribedFromChannel: (NSString*) channel;
-- (void) fayeClient: (FayeClient*) client
-        sentMessage: (NSDictionary*) message
-          toChannel: (NSString*) channel;
-@end
+typedef NS_ENUM(NSInteger, FayeChannelSubscriptionStatus) {
+    FayeChannelSubscriptionStatusUnknown,
+    FayeChannelSubscriptionStatusUnsubscribed,
+    FayeChannelSubscriptionStatusSubscribing,
+    FayeChannelSubscriptionStatusSubscribed,
+    FayeChannelSubscriptionStatusUnsubscribing
+};
 
 typedef NS_ENUM(NSInteger, FayeClientConnectionStatus) {
     FayeClientConnectionStatusDisconnected,
@@ -62,8 +52,27 @@ typedef NS_ENUM(NSInteger, FayeClientConnectionStatus) {
     FayeClientConnectionStatusDisconnecting
 };
 
+@class FayeClient;
+typedef void(^FayeClientChannelMessageHandlerBlock)(FayeClient *client, NSString* channelPath, NSDictionary *messageDict);
+typedef void(^FayeClientChannelSubscriptionStatusHandlerBlock)(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus subscriptionStatus);
+typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSError *error);
+
+@protocol FayeClientDelegate <NSObject>
+@optional
+- (void) fayeClientDidChangeConnectionStatus: (FayeClient*) client;
+- (void) fayeClient: (FayeClient*) client
+    didReceiveMessage: (NSDictionary*) message
+          onChannel: (NSString*) channelPath;
+- (void) fayeClient: (FayeClient*) client didSubscribeToChannel: (NSString*) channel;
+- (void) fayeClient: (FayeClient*) client didUnsubscribeFromChannel: (NSString*) channel;
+- (void) fayeClient: (FayeClient*) client
+     didSendMessage: (NSDictionary*) message
+          toChannel: (NSString*) channel;
+@end
+
+
+
 @interface FayeClient : NSObject
-@property (nonatomic, retain) NSString *clientID;
 @property (nonatomic, weak) id <FayeClientDelegate> delegate;
 @property (nonatomic, readonly) NSSet *subscribedChannels;
 @property (nonatomic, copy) NSDictionary *extension;
@@ -72,6 +81,7 @@ typedef NS_ENUM(NSInteger, FayeClientConnectionStatus) {
 @property (nonatomic, assign) NSTimeInterval timeout;
 @property (nonatomic, readonly, assign) FayeClientConnectionStatus connectionStatus;
 @property (nonatomic, assign) BOOL debug;
+@property (nonatomic, copy) NSString *debugLogFileName;
 
 + (instancetype) fayeClientWithURL: (NSURL*) url;
 

@@ -10,6 +10,15 @@
 
 @implementation FayeServer
 
+- (id) init
+{
+    self = [super init];
+    if (self) {
+        self.extension = @{};
+        self.channelStatus = [NSMutableDictionary new];
+    }
+}
+
 + (instancetype) fayeServerWithURL:(NSURL *)url
 {
     FayeServer *server = [FayeServer new];

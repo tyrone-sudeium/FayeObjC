@@ -29,19 +29,11 @@
 #import <Foundation/Foundation.h>
 #import "FayeClient.h"
 
-typedef NS_ENUM(NSInteger, FayeChannelSubscriptionStatus) {
-    FayeChannelSubscriptionStatusUnknown,
-    FayeChannelSubscriptionStatusUnsubscribed,
-    FayeChannelSubscriptionStatusSubscribing,
-    FayeChannelSubscriptionStatusSubscribed,
-    FayeChannelSubscriptionStatusUnsubscribing
-};
-
 @interface FayeChannel : NSObject
 @property (nonatomic, copy) NSString *channelPath;
 // NOTE, this message handler happens OFF THE MAIN THREAD
 @property (nonatomic, copy) FayeClientChannelMessageHandlerBlock messageHandlerBlock;
-@property (nonatomic, assign) FayeChannelSubscriptionStatus subscriptionStatus;
+@property (nonatomic, copy) FayeClientChannelSubscriptionStatusHandlerBlock statusHandlerBlock;
 @property (nonatomic, copy) NSDictionary *extension;
 
 + (FayeChannel*) channelWithPath: (NSString*) path;

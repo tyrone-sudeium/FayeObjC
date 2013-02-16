@@ -40,6 +40,11 @@ NSString * const FayeClientDisconnectChannel = @"/meta/disconnect";
 NSString * const FayeClientSubscribeChannel = @"/meta/subscribe";
 NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
+@interface FayeMessageQueueItem : NSObject
+@property (nonatomic, copy) dispatch_block_t proc;
+@property (nonatomic, copy) NSDictionary *message;
+@end
+
 @interface FayeClient () <SRWebSocketDelegate, NSURLConnectionDataDelegate, NSURLConnectionDelegate>
 @property (nonatomic, retain) SRWebSocket* webSocket;
 @property (nonatomic, strong) NSMutableDictionary *subscriptions;
@@ -50,6 +55,7 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 @property (nonatomic, strong) NSURLResponse *lastResponse;
 @property (nonatomic, strong) NSMutableArray *queuedMessages;
 @property (nonatomic, strong) NSURLConnection *httpConnection;
+@property (nonatomic, strong) NSMutableData *httpData;
 
 - (void) _debugMessage: (NSString*) format, ... NS_FORMAT_FUNCTION(1,2);
 
@@ -79,6 +85,8 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
         self.handshakeExtension = @{};
         self.connectExtension = @{};
         self.extension = @{};
+        self.httpData = [NSMutableData data];
+        self.debugLogFileName = @"faye.log";
         _nextSortIndex = 0;
     }
     return self;
@@ -109,11 +117,11 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     if (delegate != _delegate) {
         [self willChangeValueForKey: @"delegate"];
         _delegate = delegate;
-        _delegateRespondsTo.statusChanged = [delegate respondsToSelector: @selector(fayeClientConnectionStatusChanged:)];
-        _delegateRespondsTo.receivedMessage = [delegate respondsToSelector: @selector(fayeClient:receivedMessage:onChannel:)];
-        _delegateRespondsTo.subscribed = [delegate respondsToSelector: @selector(fayeClient:subscribedToChannel:)];
-        _delegateRespondsTo.unsubscribed = [delegate respondsToSelector: @selector(fayeClient:unsubscribedFromChannel:)];
-        _delegateRespondsTo.sentMessage = [delegate respondsToSelector: @selector(fayeClient:sentMessage:toChannel:)];
+        _delegateRespondsTo.statusChanged = [delegate respondsToSelector: @selector(fayeClientDidChangeConnectionStatus:)];
+        _delegateRespondsTo.receivedMessage = [delegate respondsToSelector: @selector(fayeClient:didReceiveMessage:onChannel:)];
+        _delegateRespondsTo.subscribed = [delegate respondsToSelector: @selector(fayeClient:didSubscribeToChannel:)];
+        _delegateRespondsTo.unsubscribed = [delegate respondsToSelector: @selector(fayeClient:didUnsubscribeFromChannel:)];
+        _delegateRespondsTo.sentMessage = [delegate respondsToSelector: @selector(fayeClient:didSendMessage:toChannel:)];
         [self didChangeValueForKey: @"delegate"];
     }
 }
@@ -183,6 +191,8 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) connectWithConnectionStatusChangedHandler:(FayeClientConnectionStatusHandlerBlock)handler
 {
+    [self _openLogFile];
+    
     if ([self.servers count] == 0) {
         [self _debugMessage: @"Ignoring connect message: no servers."];
         return;
@@ -200,6 +210,7 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 - (void) disconnect
 {
     self.connectionStatusHandler = nil;
+    [self _closeLogFile];
 }
 
 #pragma mark - WebSockets
@@ -275,21 +286,23 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) connection:(NSURLConnection *)connection didSendBodyData:(NSInteger)bytesWritten totalBytesWritten:(NSInteger)totalBytesWritten totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite
 {
-    
+    // I think only sendMessage has completion handlers to run here...
 }
 
 - (void) connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
-    
+    [self.httpData appendData: data];
 }
 
 - (void) connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    
+    self.lastResponse = response;
 }
 
 - (void) connectionDidFinishLoading:(NSURLConnection *)connection
 {
+    [self handleReceivedData: self.httpData];
+    [self.httpData setLength: 0];
     [self _debugMessage: @"LONG-POLLING: Interval"];
     if ([self.lastResponse isKindOfClass: [NSHTTPURLResponse class]]) {
         NSHTTPURLResponse *response = (NSHTTPURLResponse*) self.lastResponse;
@@ -323,8 +336,8 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     if ([ext count] > 0) {
         handshakeMessage[@"ext"] = ext;
     }
-    if (self.clientID) {
-        handshakeMessage[@"clientId"] = self.clientID;
+    if (self.currentServer.clientID) {
+        handshakeMessage[@"clientId"] = self.currentServer.clientID;
     }
     return handshakeMessage.copy;
 }
@@ -345,8 +358,8 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     if ([ext count] > 0) {
         connectMessage[@"ext"] = ext;
     }
-    if (self.clientID) {
-        connectMessage[@"clientId"] = self.clientID;
+    if (self.currentServer.clientID) {
+        connectMessage[@"clientId"] = self.currentServer.clientID;
     }
     return connectMessage.copy;
 }
@@ -363,9 +376,10 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     if ([ext count] > 0) {
         subscribeMessage[@"ext"] = ext;
     }
-    if (self.clientID) {
-        subscribeMessage[@"clientId"] = self.clientID;
+    if (self.currentServer.clientID) {
+        subscribeMessage[@"clientId"] = self.currentServer.clientID;
     }
+    return subscribeMessage.copy;
 }
 
 - (NSString*) nextMessageID
@@ -420,8 +434,125 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
             self.connectionStatusHandler(self, nil);
         }
         if (_delegateRespondsTo.statusChanged) {
-            [self.delegate fayeClientConnectionStatusChanged: self];
+            [self.delegate fayeClientDidChangeConnectionStatus: self];
         }
+    }
+}
+
+- (void) handleReceivedData: (NSData*) data
+{
+    NSError *error = nil;
+    NSArray *messages = [NSJSONSerialization JSONObjectWithData: data options: 0 error: &error];
+    if (error) {
+        [self _failWithError: error];
+        return;
+    }
+    
+    if (self.debug) {
+        [self _debugFayeMessage: messages];
+    }
+    
+    for (NSDictionary *messageJSON in messages) {
+        FayeMessage *message = [[FayeMessage alloc] initWithDict: messageJSON];
+        if (message.successful.boolValue == NO) {
+            [self _debugMessage: @"Unsuccessful faye message: %@", message];
+            continue;
+        }
+        
+        if ([message.channel isEqualToString: FayeClientConnectChannel]) {
+            [self handleConnectMessage: message];
+        } else if ([message.channel isEqualToString: FayeClientDisconnectChannel]) {
+            [self handleDisconnectMessage: message];
+        } else if ([message.channel isEqualToString: FayeClientHandshakeChannel]) {
+            [self handleHandshakeMessage: message];
+        } else if ([message.channel isEqualToString: FayeClientSubscribeChannel]) {
+            [self handleSubscribeMessage: message];
+        } else if ([message.channel isEqualToString: FayeClientUnsubscribeChannel]) {
+            [self handleUnsubscribeMessage: message];
+        } else {
+            [self handleOtherMessage: message];
+        }
+    }
+}
+
+- (void) handleConnectMessage: (FayeMessage*) message
+{
+    self.timeout = [message.advice[@"timeout"] doubleValue];
+    if (![message.clientId isEqualToString: self.currentServer.clientID]) {
+        self.currentServer.clientID = message.clientId;
+    }
+    if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
+        self.connectionStatus = FayeClientConnectionStatusConnected;
+    }
+}
+
+- (void) handleDisconnectMessage: (FayeMessage*) message
+{
+    for (NSString *channelPath in self.currentServer.channelStatus.copy) {
+        self.currentServer.channelStatus[channelPath] = @(FayeChannelSubscriptionStatusUnsubscribed);
+    }
+    if (self.connectionStatus == FayeClientConnectionStatusDisconnecting) {
+        [self disconnectNow];
+    }
+}
+
+- (void) handleHandshakeMessage: (FayeMessage*) message
+{
+    // ¯\_(ツ)_/¯
+}
+
+- (void) handleSubscribeMessage: (FayeMessage*) message
+{
+    FayeChannel *channel = self.subscriptions[message.channel];
+    NSAssert(channel != nil, @"Received subscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
+    NSAssert([self.currentServer.channelStatus[message.channel] integerValue] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    self.currentServer.channelStatus[message.channel] = @(FayeChannelSubscriptionStatusSubscribed);
+    if (channel.statusHandlerBlock != NULL) {
+        channel.statusHandlerBlock(self, channel.channelPath, FayeChannelSubscriptionStatusSubscribed);
+    }
+    if (_delegateRespondsTo.subscribed) {
+        [self.delegate fayeClient: self didSubscribeToChannel: channel.channelPath];
+    }
+}
+
+- (void) handleUnsubscribeMessage: (FayeMessage*) message
+{
+    FayeChannel *channel = self.subscriptions[message.channel];
+    NSAssert(channel != nil, @"Received unsubscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
+    NSAssert([self.currentServer.channelStatus[message.channel] integerValue] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    self.currentServer.channelStatus[message.channel] = @(FayeChannelSubscriptionStatusUnsubscribed);
+    if (channel.statusHandlerBlock != NULL) {
+        channel.statusHandlerBlock(self, channel.channelPath, FayeChannelSubscriptionStatusUnsubscribed);
+    }
+    if (_delegateRespondsTo.unsubscribed) {
+        [self.delegate fayeClient: self didUnsubscribeFromChannel: channel.channelPath];
+    }
+}
+
+- (void) handleOtherMessage: (FayeMessage*) message
+{
+    FayeChannel *channel = self.subscriptions[message.channel];
+    if (channel == nil) {
+        // Try to match a wildcard channel
+        NSMutableArray *messageChannelComponents = [message.channel componentsSeparatedByString:@"/"].mutableCopy;
+        [messageChannelComponents removeLastObject];
+        [messageChannelComponents addObject: @"*"];
+        NSString *channelKey = [messageChannelComponents componentsJoinedByString: @"/"];
+        channel = self.subscriptions[channelKey];
+    }
+    if (channel != nil) {
+        if(message.data) {
+            if (_delegateRespondsTo.receivedMessage) {
+                [self.delegate fayeClient: self didReceiveMessage: message.data onChannel: message.channel];
+            }
+        }
+        if (channel.messageHandlerBlock != NULL) {
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                channel.messageHandlerBlock(self, message.channel, message.data);
+            });
+        }
+    } else {
+        [self _debugMessage: @"NO MATCH FOR CHANNEL %@", message.channel];
     }
 }
 
@@ -432,6 +563,7 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
         [self.httpConnection cancel];
         self.httpConnection = nil;
     }
+    [self _closeLogFile];
 }
 
 - (NSArray*) sortedServers
@@ -451,16 +583,41 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     NSLog(@"FayeClient: %@", str);
 }
 
+- (void) _debugFayeMessage: (NSArray*) messageArray
+{
+    if (self.debug == NO) {
+        return;
+    }
+    NSString *logLine = [[NSString alloc] initWithData: [NSJSONSerialization dataWithJSONObject: messageArray options: NSJSONWritingPrettyPrinted error: NULL] encoding: NSUTF8StringEncoding];
+    logLine = [NSString stringWithFormat: @"[%@]: %@\n", [NSDate date], logLine];
+    [self.logFile writeData: [logLine dataUsingEncoding: NSUTF8StringEncoding]];
+}
+
+- (void) _openLogFile
+{
+    if (self.debug && self.logFile == nil) {
+        NSString* cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+        NSString* logFile = [cacheDir stringByAppendingPathComponent: self.debugLogFileName];
+        if (![[NSFileManager defaultManager] fileExistsAtPath: logFile]) {
+            [[NSFileManager defaultManager] createFileAtPath: logFile contents: nil attributes: nil];
+        }
+        self.logFile = [NSFileHandle fileHandleForWritingAtPath: logFile];
+        [self.logFile seekToEndOfFile];
+    }
+}
+
+- (void) _closeLogFile
+{
+    if (self.debug && self.logFile != nil) {
+        [self.logFile closeFile];
+        self.logFile = nil;
+    }
+}
+
 - (void) _failWithError: (NSError*) error
 {
     [self disconnectNow];
-    _connectionStatus = FayeClientConnectionStatusDisconnected;
-    if (self.connectionStatusHandler != NULL) {
-        self.connectionStatusHandler(self, error);
-    }
-    if (_delegateRespondsTo.statusChanged) {
-        [self.delegate fayeClientConnectionStatusChanged: self];
-    }
+    self.connectionStatus = FayeClientConnectionStatusDisconnected;
 }
 
 @end

@@ -21,6 +21,8 @@ typedef NS_ENUM(NSInteger, FayeServerConnectionType) {
 @property (nonatomic, assign) NSInteger failures;
 @property (nonatomic, copy) NSDictionary *extension;
 @property (nonatomic, assign) NSInteger sortIndex;
+@property (nonatomic, strong) NSMutableDictionary *channelStatus;
+@property (nonatomic, strong) NSString *clientID;
 
 + (instancetype) fayeServerWithURL: (NSURL*) url;
 
