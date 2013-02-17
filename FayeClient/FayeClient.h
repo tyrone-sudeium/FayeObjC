@@ -97,6 +97,8 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 - (void) subscribeToChannel: (NSString *) channel
              messageHandler: (FayeClientChannelMessageHandlerBlock) messageHandler
           completionHandler: (dispatch_block_t) completionHandler;
+/** Note that if you want this extension to be included in the subscription
+ message, you must call this BEFORE calling subscribeToChannel */
 - (void) setExtension: (NSDictionary*) extension
            forChannel: (NSString*) channel;
 

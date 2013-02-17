@@ -16,7 +16,11 @@
     if (self) {
         self.extension = @{};
         self.channelStatus = [NSMutableDictionary new];
+        self.advice = @{ @"reconnect": @"retry",
+                         @"interval": @0,
+                         @"timeout": @60};
     }
+    return self;
 }
 
 + (instancetype) fayeServerWithURL:(NSURL *)url
@@ -65,6 +69,16 @@
 - (BOOL) connectsWithWebSockets
 {
     return _connectionType == FayeServerConnectionTypeWebSocket || _connectionType == FayeServerConnectionTypeSecureWebSocket;
+}
+
+- (NSString*) reconnectAdvice
+{
+    return self.advice[@"reconnect"];
+}
+
+- (NSTimeInterval) intervalAdvice
+{
+    return [self.advice[@"interval"] doubleValue];
 }
 
 @end

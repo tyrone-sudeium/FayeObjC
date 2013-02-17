@@ -130,34 +130,69 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) subscribeToChannel:(NSString *)channel
 {
-    
+    [self subscribeToChannel: channel messageHandler: NULL completionHandler: NULL];
 }
 
 - (void) subscribeToChannel:(NSString *)channel messageHandler:(FayeClientChannelMessageHandlerBlock)handler
 {
-    
+    [self subscribeToChannel: channel messageHandler: handler completionHandler: NULL];
 }
 
 - (void) subscribeToChannel:(NSString *)channel
              messageHandler:(FayeClientChannelMessageHandlerBlock)messageHandler
           completionHandler:(dispatch_block_t)completionHandler
 {
-    
+    FayeChannel *fayeChannel = self.subscriptions[channel];
+    if (fayeChannel == nil) {
+        fayeChannel = [FayeChannel new];
+        fayeChannel.channelPath = channel;
+    }
+    fayeChannel.messageHandlerBlock = messageHandler;
+    if (completionHandler != NULL) {
+        fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
+            if (status == FayeChannelSubscriptionStatusSubscribed) {
+                completionHandler();
+            }
+        };
+    } else {
+        fayeChannel.statusHandlerBlock = NULL;
+    }
+    [self queueMessage: [self subscribeMessageForChannelPath: channel]];
 }
 
 - (void) unsubscribeFromChannel:(NSString *)channel
 {
-    
+    [self unsubscribeFromChannel: channel completionHandler: NULL];
 }
 
 - (void) unsubscribeFromChannel:(NSString *)channel completionHandler:(dispatch_block_t)handler
 {
-    
+    FayeChannel *fayeChannel = self.subscriptions[channel];
+    if (fayeChannel == nil) {
+        [self _debugMessage: @"Attempt to unsubscribe from channel '%@' which is not subscribed to.", channel];
+        return;
+    }
+    fayeChannel.messageHandlerBlock = NULL;
+    if (handler != NULL) {
+        fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
+            if (status == FayeChannelSubscriptionStatusUnsubscribed) {
+                handler();
+            }
+        };
+    } else {
+        fayeChannel.statusHandlerBlock = NULL;
+    }
+    [self queueMessage: [self unsubscribeMessageForChannelPath: channel]];
 }
 
 - (void) setExtension:(NSDictionary *)extension forChannel:(NSString *)channel
 {
-    
+    FayeChannel *fayeChannel = self.subscriptions[channel];
+    if (fayeChannel == nil) {
+        fayeChannel = [FayeChannel new];
+        fayeChannel.channelPath = channel;
+    }
+    fayeChannel.extension = extension;
 }
 
 #pragma mark - Publishing Messages
@@ -253,15 +288,24 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) startHTTPConnection
 {
-    [self.queuedMessages insertObject: [self connectMessage] atIndex: 0];
-    NSArray *messages = self.queuedMessages.copy;
+    NSData *data = nil;
     NSError *error = nil;
-    NSData *data = [NSJSONSerialization dataWithJSONObject: messages options: 0 error: &error];
-    if (error) {
-        [self _failWithError: error];
-        return;
+    if (self.currentServer.clientID) {
+        [self.queuedMessages insertObject: [self connectMessage] atIndex: 0];
+        NSArray *messages = self.queuedMessages.copy;
+        data = [NSJSONSerialization dataWithJSONObject: messages options: 0 error: &error];
+        if (error) {
+            [self _failWithError: error];
+            return;
+        }
+        [self.queuedMessages removeAllObjects];
+    } else {
+        data = [NSJSONSerialization dataWithJSONObject: @[[self handshakeMessage]] options: 0 error: &error];
+        if (error) {
+            [self _failWithError: error];
+            return;
+        }
     }
-    [self.queuedMessages removeAllObjects];
     
     if (self.httpConnection != nil) {
         [self.httpConnection cancel];
@@ -270,7 +314,7 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL: self.currentServer.url
                                                            cachePolicy: NSURLCacheStorageNotAllowed
-                                                       timeoutInterval: self.timeout];
+                                                       timeoutInterval: self.currentServer.timeoutAdvice];
     [request setHTTPMethod: @"POST"];
     [request setHTTPBody: data];
     [request setValue: @"application/json" forHTTPHeaderField: @"Content-Type"];
@@ -336,9 +380,6 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     if ([ext count] > 0) {
         handshakeMessage[@"ext"] = ext;
     }
-    if (self.currentServer.clientID) {
-        handshakeMessage[@"clientId"] = self.currentServer.clientID;
-    }
     return handshakeMessage.copy;
 }
 
@@ -353,15 +394,28 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
      @{ @"channel": FayeClientConnectChannel,
      @"connectionType": connectionType,
      @"id": [self nextMessageID],
+     @"clientId": self.currentServer.clientID
      }];
     NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, self.connectExtension]];
     if ([ext count] > 0) {
         connectMessage[@"ext"] = ext;
     }
-    if (self.currentServer.clientID) {
-        connectMessage[@"clientId"] = self.currentServer.clientID;
-    }
     return connectMessage.copy;
+}
+
+- (NSDictionary*) disconnectMessage
+{
+    NSMutableDictionary *disconnectMessage = [NSMutableDictionary new];
+    [disconnectMessage addEntriesFromDictionary:
+     @{ @"channel": FayeClientDisconnectChannel,
+     @"id": [self nextMessageID],
+     @"clientId": self.currentServer.clientID
+     }];
+    NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, self.connectExtension]];
+    if ([ext count] > 0) {
+        disconnectMessage[@"ext"] = ext;
+    }
+    return disconnectMessage.copy;
 }
 
 - (NSDictionary*) subscribeMessageForChannelPath: (NSString*) channelPath
@@ -370,16 +424,32 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     [subscribeMessage addEntriesFromDictionary:
      @{ @"channel": FayeClientSubscribeChannel,
      @"id": [self nextMessageID],
-     @"subscription": channelPath}];
+     @"subscription": channelPath,
+     @"clientId": self.currentServer.clientID
+     }];
     FayeChannel *channel = self.subscriptions[channelPath];
     NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, channel.extension]];
     if ([ext count] > 0) {
         subscribeMessage[@"ext"] = ext;
     }
-    if (self.currentServer.clientID) {
-        subscribeMessage[@"clientId"] = self.currentServer.clientID;
-    }
     return subscribeMessage.copy;
+}
+
+- (NSDictionary*) unsubscribeMessageForChannelPath: (NSString*) channelPath
+{
+    NSMutableDictionary *unsubscribeMessage = [NSMutableDictionary new];
+    [unsubscribeMessage addEntriesFromDictionary:
+     @{ @"channel": FayeClientSubscribeChannel,
+     @"id": [self nextMessageID],
+     @"subscription": channelPath,
+     @"clientId": self.currentServer.clientID
+     }];
+    FayeChannel *channel = self.subscriptions[channelPath];
+    NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, channel.extension]];
+    if ([ext count] > 0) {
+        unsubscribeMessage[@"ext"] = ext;
+    }
+    return unsubscribeMessage.copy;
 }
 
 - (NSString*) nextMessageID
@@ -454,6 +524,13 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     
     for (NSDictionary *messageJSON in messages) {
         FayeMessage *message = [[FayeMessage alloc] initWithDict: messageJSON];
+        if (message.advice) {
+            [self handleAdvice: message.advice];
+            // Advice can cause a disconnect... we shouldn't proceed if we've been disconnected.
+            if (self.connectionStatus == FayeClientConnectionStatusDisconnected) {
+                return;
+            }
+        }
         if (message.successful.boolValue == NO) {
             [self _debugMessage: @"Unsuccessful faye message: %@", message];
             continue;
@@ -477,7 +554,6 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) handleConnectMessage: (FayeMessage*) message
 {
-    self.timeout = [message.advice[@"timeout"] doubleValue];
     if (![message.clientId isEqualToString: self.currentServer.clientID]) {
         self.currentServer.clientID = message.clientId;
     }
@@ -498,7 +574,7 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 - (void) handleHandshakeMessage: (FayeMessage*) message
 {
-    // ¯\_(ツ)_/¯
+    self.currentServer.clientID = message.clientId;
 }
 
 - (void) handleSubscribeMessage: (FayeMessage*) message
@@ -554,6 +630,26 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
     } else {
         [self _debugMessage: @"NO MATCH FOR CHANNEL %@", message.channel];
     }
+}
+
+- (void) handleAdvice: (NSDictionary*) advice
+{
+    self.currentServer.advice = advice;
+    if ([self.currentServer.reconnectAdvice isEqualToString: @"handshake"] && self.connectionStatus != FayeClientConnectionStatusDisconnected) {
+        self.currentServer.clientID = nil;
+        [self cycleConnection];
+    }
+}
+
+- (void) cycleConnection
+{
+    [self disconnectNow];
+    self.connectionStatus = FayeClientConnectionStatusDisconnected;
+    double delayInSeconds = self.currentServer.intervalAdvice;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        [self connectWithConnectionStatusChangedHandler: self.connectionStatusHandler];
+    });
 }
 
 // Doesn't unsubscribe, doesn't update connection status.

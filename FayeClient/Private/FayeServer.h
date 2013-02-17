@@ -23,6 +23,7 @@ typedef NS_ENUM(NSInteger, FayeServerConnectionType) {
 @property (nonatomic, assign) NSInteger sortIndex;
 @property (nonatomic, strong) NSMutableDictionary *channelStatus;
 @property (nonatomic, strong) NSString *clientID;
+@property (nonatomic, copy) NSDictionary *advice;
 
 + (instancetype) fayeServerWithURL: (NSURL*) url;
 
@@ -30,5 +31,9 @@ typedef NS_ENUM(NSInteger, FayeServerConnectionType) {
 
 - (BOOL) connectsWithWebSockets;
 - (BOOL) connectsWithLongPolling;
+
+- (NSString*) reconnectAdvice;
+- (NSTimeInterval) intervalAdvice;
+- (NSTimeInterval) timeoutAdvice;
 
 @end
