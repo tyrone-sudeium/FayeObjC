@@ -37,46 +37,48 @@
 
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
-  [super viewDidLoad];
-  
-  NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
-  [nc addObserver:self selector:@selector(keyboardWillShow:) name: UIKeyboardWillShowNotification object:nil];  
-  [nc addObserver:self selector:@selector(keyboardWillHide:) name: UIKeyboardWillHideNotification object:nil];    
-  
-  self.connected = NO;
-  self.faye = [[FayeClient alloc] initWithURLString:@"ws://YOUR_SERVER_HERE:PORT/faye" channel:@"/testing"];
-  self.faye.delegate = self;
-  [faye connectToServer];
+    [super viewDidLoad];
+    
+    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+    [nc addObserver:self selector:@selector(keyboardWillShow:) name: UIKeyboardWillShowNotification object:nil];
+    [nc addObserver:self selector:@selector(keyboardWillHide:) name: UIKeyboardWillHideNotification object:nil];
+    
+    self.connected = NO;
+    self.faye = [FayeClient fayeClientWithURL: [NSURL URLWithString: @"http://localhost:8000/faye"]];
+    self.faye.delegate = self;
+    self.faye.debug = YES;
+    [self.faye subscribeToChannel: @"/testing"];
+    [faye connect];
 }
 
-- (void) keyboardWillShow:(NSNotification *)notification {  
-  CGRect rect = editToolbar.frame, keyboardFrame;
-  [[notification.userInfo valueForKey:UIKeyboardBoundsUserInfoKey] getValue:&keyboardFrame];  
-  rect.origin.y -= keyboardFrame.size.height;      
-  
-  [UIView beginAnimations:nil context:nil];
-  [UIView setAnimationDuration:0.3];
-  editToolbar.frame = rect;  
-  messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height-keyboardFrame.size.height);  
-  [UIView commitAnimations];
+- (void) keyboardWillShow:(NSNotification *)notification {
+    CGRect rect = editToolbar.frame, keyboardFrame;
+    [[notification.userInfo valueForKey:UIKeyboardBoundsUserInfoKey] getValue:&keyboardFrame];
+    rect.origin.y -= keyboardFrame.size.height;
+    
+    [UIView beginAnimations:nil context:nil];
+    [UIView setAnimationDuration:0.3];
+    editToolbar.frame = rect;
+    messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height-keyboardFrame.size.height);
+    [UIView commitAnimations];
 }
 
 - (void) keyboardWillHide:(NSNotification *)notification {
-  CGRect rect = editToolbar.frame, keyboardFrame;
-  [[notification.userInfo valueForKey:UIKeyboardBoundsUserInfoKey] getValue:&keyboardFrame];  
-  rect.origin.y += keyboardFrame.size.height;      
-  
-  [UIView beginAnimations:nil context:nil];
-  [UIView setAnimationDuration:0.3];
-  editToolbar.frame = rect;  
-  messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height+keyboardFrame.size.height);  
-  [UIView commitAnimations];
+    CGRect rect = editToolbar.frame, keyboardFrame;
+    [[notification.userInfo valueForKey:UIKeyboardBoundsUserInfoKey] getValue:&keyboardFrame];
+    rect.origin.y += keyboardFrame.size.height;
+    
+    [UIView beginAnimations:nil context:nil];
+    [UIView setAnimationDuration:0.3];
+    editToolbar.frame = rect;
+    messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height+keyboardFrame.size.height);
+    [UIView commitAnimations];
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-  DLog(@"text field should return");
-  [self sendMessage];
-  return YES;
+    DLog(@"text field should return");
+    [self sendMessage];
+    return YES;
 }
 
 /*
@@ -88,62 +90,54 @@
 */
 
 - (IBAction) sendMessage {
-  DLog(@"send message %@", messageTextField.text);    
-  NSString *message = [NSString stringWithString:messageTextField.text];
-  NSDictionary *messageDict = [NSDictionary dictionaryWithObjectsAndKeys:message, @"message", nil];  
-  [self.faye sendMessage:messageDict];
-  self.messageTextField.text = @"";
+    DLog(@"send message %@", messageTextField.text);
+    NSString *message = [NSString stringWithString:messageTextField.text];
+    NSDictionary *messageDict = [NSDictionary dictionaryWithObjectsAndKeys:message, @"message", nil];
+    [self.faye sendMessage: messageDict toChannel: @"/testing"];
+    self.messageTextField.text = @"";
 }
 
 - (IBAction) hideKeyboard {
-  self.messageTextField.text = @"";
-  [self.messageTextField resignFirstResponder];
+    self.messageTextField.text = @"";
+    [self.messageTextField resignFirstResponder];
 }
 
 #pragma mark -
 #pragma mark FayeObjc delegate
-- (void) messageReceived:(NSDictionary *)messageDict {
-  DLog(@"message recieved %@", messageDict);
-  if([messageDict objectForKey:@"message"]) {    
-    self.messageView.text = [self.messageView.text stringByAppendingString:[NSString stringWithFormat:@"%@\n", [messageDict objectForKey:@"message"]]]; 
-    //[self.messagesText insertText:[NSString stringWithFormat:@"%@\n", [messageDict objectForKey:@"message"]]];
-  }
+- (void) fayeClient:(FayeClient *)client didReceiveMessage:(NSDictionary *)message onChannel:(NSString *)channelPath
+{
+    DLog(@"message recieved %@", message);
+    if([message objectForKey:@"message"]) {
+        self.messageView.text = [self.messageView.text stringByAppendingString:[NSString stringWithFormat:@"%@\n", [message objectForKey:@"message"]]];
+        //[self.messagesText insertText:[NSString stringWithFormat:@"%@\n", [messageDict objectForKey:@"message"]]];
+    }
 }
 
 - (void)connectedToServer {
-  DLog(@"Connected");
-  self.connected = YES;
-  //[self.connectIndicator setImage:[NSImage imageNamed:@"green.png"]];
-  //[self.connectBtn setTitle:@"Disconnect"];
-  //[connectBtn setAction:@selector(disconnectFromServer:)];
+    DLog(@"Connected");
+    self.connected = YES;
+    //[self.connectIndicator setImage:[NSImage imageNamed:@"green.png"]];
+    //[self.connectBtn setTitle:@"Disconnect"];
+    //[connectBtn setAction:@selector(disconnectFromServer:)];
 }
 
 - (void)disconnectedFromServer {
-  DLog(@"Disconnected");
-  self.connected = NO;
-  //[self.connectIndicator setImage:[NSImage imageNamed:@"red.png"]];
-  //[self.connectBtn setTitle:@"Connect"];
-  //[connectBtn setAction:@selector(connectToServer:)];
+    DLog(@"Disconnected");
+    self.connected = NO;
+    //[self.connectIndicator setImage:[NSImage imageNamed:@"red.png"]];
+    //[self.connectBtn setTitle:@"Connect"];
+    //[connectBtn setAction:@selector(connectToServer:)];
 }
 
 #pragma mark -
 #pragma mark Memory management
-- (void)didReceiveMemoryWarning {	
-  [super didReceiveMemoryWarning];
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
 }
 
 - (void)viewDidUnload {
 	// Release any retained subviews of the main view.
 	// e.g. self.myOutlet = nil;
-}
-
-- (void)dealloc {
-  [messageTextField release];
-	[editToolbar release];
-  [messageView release];
-  faye.delegate = nil;
-  [faye release];
-  [super dealloc];
 }
 
 @end

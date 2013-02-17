@@ -81,4 +81,9 @@
     return [self.advice[@"interval"] doubleValue];
 }
 
+- (NSTimeInterval) timeoutAdvice
+{
+    return [self.advice[@"timeout"] doubleValue];
+}
+
 @end

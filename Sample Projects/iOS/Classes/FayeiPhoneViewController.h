@@ -10,11 +10,11 @@
 #import "FayeClient.h"
 
 @interface FayeiPhoneViewController : UIViewController <FayeClientDelegate, UITextFieldDelegate> {
-  FayeClient *faye;
-  BOOL connected;
-  UITextField *messageTextField;
-  UIToolbar *editToolbar;
-  UITextView *messageView;
+    FayeClient *faye;
+    BOOL connected;
+    UITextField *messageTextField;
+    UIToolbar *editToolbar;
+    UITextView *messageView;
 }
 
 @property (retain) FayeClient *faye;

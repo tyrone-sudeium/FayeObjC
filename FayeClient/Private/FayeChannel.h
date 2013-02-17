@@ -35,6 +35,8 @@
 @property (nonatomic, copy) FayeClientChannelMessageHandlerBlock messageHandlerBlock;
 @property (nonatomic, copy) FayeClientChannelSubscriptionStatusHandlerBlock statusHandlerBlock;
 @property (nonatomic, copy) NSDictionary *extension;
+@property (nonatomic, assign) BOOL markedForSubscription;
+@property (nonatomic, assign) BOOL markedForUnsubscription;
 
 + (FayeChannel*) channelWithPath: (NSString*) path;
 
