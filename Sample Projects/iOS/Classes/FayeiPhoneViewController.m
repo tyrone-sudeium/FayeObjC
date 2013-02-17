@@ -93,7 +93,9 @@
     DLog(@"send message %@", messageTextField.text);
     NSString *message = [NSString stringWithString:messageTextField.text];
     NSDictionary *messageDict = [NSDictionary dictionaryWithObjectsAndKeys:message, @"message", nil];
-    [self.faye sendMessage: messageDict toChannel: @"/testing"];
+    [self.faye sendMessage: messageDict toChannel: @"/testing" extension: nil completionHandler:^{
+        DLog(@"message came back!");
+    }];
     self.messageTextField.text = @"";
 }
 

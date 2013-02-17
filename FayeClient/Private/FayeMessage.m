@@ -72,15 +72,14 @@
                                 @"error",
                                 @"subscription",
                                 @"data",
-                                @"ext",
-                                @"fayeId"];
+                                @"ext"];
         for (NSString *propertyName in properties) {
             id object = dict[propertyName];
             if (object != [NSNull null]) {
                 [self setValue: object forKey: propertyName];
             }
         }
-        
+        self.fayeId = dict[@"id"];
         NSString *timestamp = dict[@"timestamp"];
         if (timestamp) {
             if ([timestamp hasSuffix: @"Z"]) {

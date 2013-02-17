@@ -42,28 +42,9 @@ NSString * const FayeClientUnsubscribeChannel = @"/meta/unsubscribe";
 
 typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
-
-//@interface FayeSubscriptionQueue : NSObject
-//@property (nonatomic, strong) NSMutableDictionary *channelActions;
-//@end
-//
-//
-//@implementation FayeSubscriptionQueue
-//
-//- (void) queueSubscriptionToChannel: (NSString*) channel
-//{
-//    
-//}
-//
-//- (void) queueUnsubscriptionToChannel: (NSString*) channel
-//{
-//    
-//}
-//
-//@end
-
 @interface FayeMessageQueueItem : NSObject
 @property (nonatomic, copy) FayeMessageQueueItemGetMessageBlock block;
+@property (nonatomic, copy) dispatch_block_t sentMessageHandler;
 @end
 
 @implementation FayeMessageQueueItem
@@ -86,6 +67,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 @property (nonatomic, strong) NSMutableArray *queuedMessages;
 @property (nonatomic, strong) NSURLConnection *httpConnection;
 @property (nonatomic, strong) NSMutableData *httpData;
+@property (nonatomic, strong) NSMutableDictionary *sentMessageHandlers;
 
 - (void) _debugMessage: (NSString*) format, ... NS_FORMAT_FUNCTION(1,2);
 
@@ -113,6 +95,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         self.servers = [NSMutableDictionary dictionary];
         self.subscriptions = [NSMutableDictionary dictionary];
         self.queuedMessages = [NSMutableArray array];
+        self.sentMessageHandlers = [NSMutableDictionary dictionary];
         self.timeout = 10;
         self.handshakeExtension = @{};
         self.connectExtension = @{};
@@ -241,14 +224,14 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) sendMessage:(NSDictionary *)message toChannel:(NSString *)channel
 {
-    
+    [self sendMessage: message toChannel: channel extension: nil completionHandler: NULL];
 }
 
 - (void) sendMessage:(NSDictionary *)message
            toChannel:(NSString *)channel
            extension:(NSDictionary *)extension
 {
-    
+    [self sendMessage: message toChannel: channel extension: extension completionHandler: NULL];
 }
 
 - (void) sendMessage:(NSDictionary *)message
@@ -256,7 +239,15 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
            extension:(NSDictionary *)extension
    completionHandler:(dispatch_block_t)handler
 {
-    
+    if (message == nil) {
+        [self _debugMessage: @"Ignoring send message: no data."];
+        return;
+    }
+    FayeMessageQueueItem *queueItem = [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+        return [self publishMessageForChannelPath: channel withData: message extension:extension];
+    }];
+    queueItem.sentMessageHandler = handler;
+    [self queueMessage: queueItem];
 }
 
 #pragma mark - Connection / Disconnection
@@ -286,8 +277,10 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) disconnect
 {
-    self.connectionStatusHandler = nil;
-    [self _closeLogFile];
+    self.connectionStatus = FayeClientConnectionStatusDisconnecting;
+    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+        return [self disconnectMessage];
+    }]];
 }
 
 #pragma mark - WebSockets
@@ -304,7 +297,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error
 {
-    
+    [self _debugMessage: @"WebSocket: Connection failure."];
+    self.currentServer.failures += 1;
+    [self cycleConnection];
 }
 
 - (void) webSocket:(SRWebSocket *)webSocket
@@ -334,7 +329,19 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (self.currentServer.clientID) {
         NSMutableArray *messages = [NSMutableArray new];
         [messages addObject: [self connectMessage]];
-        [messages addObjectsFromArray: [self messagesFromCurrentQueue]];
+        NSArray *queueMessages = [self messagesFromCurrentQueue];
+        [messages addObjectsFromArray: queueMessages];
+        NSInteger index = 0;
+        for (NSDictionary *message in queueMessages) {
+            if (message[@"data"] != nil) {
+                // It's a publish
+                FayeMessageQueueItem *item = [self.queuedMessages objectAtIndex: index];
+                if (item.sentMessageHandler != NULL) {
+                    self.sentMessageHandlers[message[@"id"]] = item.sentMessageHandler;
+                }
+            }
+            index++;
+        }
         data = [NSJSONSerialization dataWithJSONObject: messages options: 0 error: &error];
         if (error) {
             [self _failWithError: error];
@@ -498,6 +505,26 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     return unsubscribeMessage.copy;
 }
 
+- (NSDictionary*) publishMessageForChannelPath: (NSString*) channelPath withData: (NSDictionary*) data extension: (NSDictionary*) extension
+{
+    NSMutableDictionary *publishMessage = [NSMutableDictionary new];
+    [publishMessage addEntriesFromDictionary: @{
+     @"channel": channelPath,
+     @"data": data,
+     @"clientId": self.currentServer.clientID,
+     @"id": [self nextMessageID]
+     }];
+    FayeChannel *fayeChannel = self.subscriptions[channelPath];
+    if (extension == nil) {
+        extension = @{};
+    }
+    NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, fayeChannel.extension, extension]];
+    if ([ext count] > 0) {
+        publishMessage[@"ext"] = ext;
+    }
+    return publishMessage.copy;
+}
+
 - (NSString*) nextMessageID
 {
     static const char chars[] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -552,6 +579,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         // WebSockets can send messages straight away!
     } else {
         [self.queuedMessages addObject: queueItem];
+        [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(sendMessagesAndEmptyQueue) object: nil];
+        [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 1];
     }
 }
 
@@ -569,6 +598,13 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
         return [self unsubscribeMessageForChannelPath: channel];
     }]];
+}
+
+- (void) sendMessagesAndEmptyQueue
+{
+    if ([self.currentServer connectsWithLongPolling] && self.queuedMessages.count > 0) {
+        [self startHTTPConnection];
+    }
 }
 
 - (void) setConnectionStatus:(FayeClientConnectionStatus)connectionStatus
@@ -646,6 +682,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     }
     if (self.connectionStatus == FayeClientConnectionStatusDisconnecting) {
         [self disconnectNow];
+        self.connectionStatusHandler = nil;
+        [self _closeLogFile];
     }
 }
 
@@ -681,6 +719,12 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) handleOtherMessage: (FayeMessage*) message
 {
+    dispatch_block_t sentHandler = self.sentMessageHandlers[message.fayeId];
+    if (sentHandler) {
+        sentHandler();
+        [self.sentMessageHandlers removeObjectForKey: message.fayeId];
+    }
+    
     FayeChannel *channel = self.subscriptions[message.channel];
     if (channel == nil) {
         // Try to match a wildcard channel
@@ -757,7 +801,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) cycleConnection
 {
     [self disconnectNow];
-    self.connectionStatus = FayeClientConnectionStatusDisconnected;
+    self.connectionStatus = FayeClientConnectionStatusConnecting;
     double delayInSeconds = self.currentServer.intervalAdvice;
     if (delayInSeconds < 3) {
         delayInSeconds = 3;
