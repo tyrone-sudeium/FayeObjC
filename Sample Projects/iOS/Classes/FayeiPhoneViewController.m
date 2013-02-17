@@ -48,7 +48,7 @@
     self.faye.delegate = self;
     self.faye.debug = YES;
     [self.faye subscribeToChannel: @"/testing"];
-    [faye connect];
+    [self.faye connect];
 }
 
 - (void) keyboardWillShow:(NSNotification *)notification {

@@ -111,6 +111,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     self = [super init];
     if (self) {
         self.servers = [NSMutableDictionary dictionary];
+        self.subscriptions = [NSMutableDictionary dictionary];
+        self.queuedMessages = [NSMutableArray array];
         self.timeout = 10;
         self.handshakeExtension = @{};
         self.connectExtension = @{};
@@ -176,6 +178,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (fayeChannel == nil) {
         fayeChannel = [FayeChannel new];
         fayeChannel.channelPath = channel;
+        self.subscriptions[channel] = fayeChannel;
+        [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: channel];
     }
     fayeChannel.messageHandlerBlock = messageHandler;
     fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
@@ -328,8 +332,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     NSData *data = nil;
     NSError *error = nil;
     if (self.currentServer.clientID) {
-        NSMutableArray *messages = [NSMutableArray arrayWithArray: [self messagesFromCurrentQueue]];
-        [messages insertObject: [self connectMessage] atIndex: 0];
+        NSMutableArray *messages = [NSMutableArray new];
+        [messages addObject: [self connectMessage]];
+        [messages addObjectsFromArray: [self messagesFromCurrentQueue]];
         data = [NSJSONSerialization dataWithJSONObject: messages options: 0 error: &error];
         if (error) {
             [self _failWithError: error];
@@ -361,6 +366,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
 {
+    [self _debugMessage: @"LONG-POLLING: Connection failure."];
     self.currentServer.failures += 1;
     [self cycleConnection];
 }
@@ -436,6 +442,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     NSDictionary *ext = [self mergeExtensionDictionaries: @[self.extension, self.connectExtension]];
     if ([ext count] > 0) {
         connectMessage[@"ext"] = ext;
+    }
+    if (self.queuedMessages.count > 0 && [self.currentServer connectsWithLongPolling]) {
+        connectMessage[@"advice"] = @{ @"timeout": @0 };
     }
     return connectMessage.copy;
 }
@@ -599,7 +608,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
                 return;
             }
         }
-        if (message.successful.boolValue == NO) {
+        if (message.successful != nil && message.successful.boolValue == NO) {
             [self _debugMessage: @"Unsuccessful faye message: %@", message];
             continue;
         }
@@ -647,26 +656,23 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     
     for (NSString *channelPath in self.subscriptions) {
         if ([self subscriptionStatusForChannel: channelPath] == FayeChannelSubscriptionStatusUnsubscribed) {
-            [self setSubscriptionStatus: FayeChannelSubscriptionStatusSubscribing forChannel: channelPath];
-            [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
-                return [self subscribeMessageForChannelPath: channelPath];
-            }]];
+            [self queueChannelSubscription: channelPath];
         }
     }
 }
 
 - (void) handleSubscribeMessage: (FayeMessage*) message
 {
-    FayeChannel *channel = self.subscriptions[message.channel];
+    FayeChannel *channel = self.subscriptions[message.subscription];
     NSAssert(channel != nil, @"Received subscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
-    NSAssert([self.currentServer.channelStatus[message.channel] integerValue] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
     [self setSubscriptionStatus: FayeChannelSubscriptionStatusSubscribed forChannel: message.channel];
     [self _debugMessage: @"Subscribed to: '%@'", channel.channelPath];
 }
 
 - (void) handleUnsubscribeMessage: (FayeMessage*) message
 {
-    FayeChannel *channel = self.subscriptions[message.channel];
+    FayeChannel *channel = self.subscriptions[message.subscription];
     NSAssert(channel != nil, @"Received unsubscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
     NSAssert([self.currentServer.channelStatus[message.channel] integerValue] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
     [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: message.channel];
@@ -724,6 +730,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 {
     FayeChannelSubscriptionStatus oldStatus = [self subscriptionStatusForChannel: channel];
     if (status != oldStatus) {
+        [self _debugMessage: @"Status for '%@': %i", channel, status];
         self.currentServer.channelStatus[channel] = @(status);
         FayeChannel *fayeChannel = self.subscriptions[channel];
         if (fayeChannel.statusHandlerBlock != NULL) {
@@ -752,6 +759,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     [self disconnectNow];
     self.connectionStatus = FayeClientConnectionStatusDisconnected;
     double delayInSeconds = self.currentServer.intervalAdvice;
+    if (delayInSeconds < 3) {
+        delayInSeconds = 3;
+    }
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
         [self connectWithConnectionStatusChangedHandler: self.connectionStatusHandler];
