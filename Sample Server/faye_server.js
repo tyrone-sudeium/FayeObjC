@@ -15,3 +15,14 @@ var server = http.createServer(function(request, response) {
 
 bayeux.attach(server);
 server.listen(8000);
+
+var cli = bayeux.getClient();
+function sendDateLoop(cli) {
+	setTimeout(function(){sendDateLoop(cli);}, (Math.floor(Math.random() * 5) + 2) * 1000);
+	cli.publish("/testing", { 'date': new Date().toString() });
+}
+
+sendDateLoop(cli);
+
+
+
