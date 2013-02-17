@@ -22,9 +22,12 @@
 @property (nonatomic, retain) IBOutlet UITextField *messageTextField;
 @property (nonatomic, retain) IBOutlet UIToolbar *editToolbar;
 @property (nonatomic, retain) IBOutlet UITextView *messageView;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *connectDisconnectButton;
 
 - (IBAction) sendMessage;
 - (IBAction) hideKeyboard;
+- (IBAction)channelsButtonAction:(id)sender;
+- (IBAction)connectDisconnectButtonAction:(id)sender;
 
 @end
 

@@ -7,6 +7,7 @@
 //
 
 #import "FayeiPhoneViewController.h"
+#import "FayeiPhoneChannelsViewController.h"
 
 @implementation FayeiPhoneViewController
 
@@ -33,11 +34,18 @@
 }
 */
 
+- (void) viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear: animated];
+    [self.navigationController setNavigationBarHidden: YES animated: animated];
+}
 
 
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.title = @"Home";
     
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
     [nc addObserver:self selector:@selector(keyboardWillShow:) name: UIKeyboardWillShowNotification object:nil];
@@ -51,6 +59,20 @@
     [self.faye connect];
 }
 
+- (void) fayeClientDidChangeConnectionStatus:(FayeClient *)client
+{
+    char* statuses[] = {"FayeClientConnectionStatusDisconnected",
+        "FayeClientConnectionStatusConnecting",
+        "FayeClientConnectionStatusConnected",
+        "FayeClientConnectionStatusDisconnecting"};
+    DLog(@"Connection status: %s", statuses[client.connectionStatus]);
+    if (client.connectionStatus == FayeClientConnectionStatusDisconnected) {
+        self.connectDisconnectButton.title = @"Connect";
+    } else {
+        self.connectDisconnectButton.title = @"Disconnect";
+    }
+}
+
 - (void) keyboardWillShow:(NSNotification *)notification {
     CGRect rect = editToolbar.frame, keyboardFrame;
     [[notification.userInfo valueForKey:UIKeyboardBoundsUserInfoKey] getValue:&keyboardFrame];
@@ -59,7 +81,7 @@
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:0.3];
     editToolbar.frame = rect;
-    messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height-keyboardFrame.size.height);
+    messageView.frame = CGRectMake(0, messageView.frame.origin.y, 320, messageView.frame.size.height-keyboardFrame.size.height);
     [UIView commitAnimations];
 }
 
@@ -71,7 +93,7 @@
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:0.3];
     editToolbar.frame = rect;
-    messageView.frame = CGRectMake(0, 0, 320, messageView.frame.size.height+keyboardFrame.size.height);
+    messageView.frame = CGRectMake(0, messageView.frame.origin.y, 320, messageView.frame.size.height+keyboardFrame.size.height);
     [UIView commitAnimations];
 }
 
@@ -102,6 +124,20 @@
 - (IBAction) hideKeyboard {
     self.messageTextField.text = @"";
     [self.messageTextField resignFirstResponder];
+}
+
+- (IBAction)channelsButtonAction:(id)sender {
+    FayeiPhoneChannelsViewController *channelsVC = [FayeiPhoneChannelsViewController new];
+    channelsVC.faye = self.faye;
+    [self.navigationController pushViewController: channelsVC animated: YES];
+}
+
+- (IBAction)connectDisconnectButtonAction:(id)sender {
+    if (self.faye.connectionStatus == FayeClientConnectionStatusDisconnected) {
+        [self.faye connect];
+    } else {
+        [self.faye disconnect];
+    }
 }
 
 #pragma mark -

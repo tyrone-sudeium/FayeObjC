@@ -10,13 +10,10 @@
 
 @class FayeiPhoneViewController;
 
-@interface FayeiPhoneAppDelegate : NSObject <UIApplicationDelegate> {
-    UIWindow *window;
-    FayeiPhoneViewController *viewController;
-}
+@interface FayeiPhoneAppDelegate : NSObject <UIApplicationDelegate>
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) IBOutlet FayeiPhoneViewController *viewController;
+@property (nonatomic, retain) IBOutlet UINavigationController *viewController;
 
 @end
 

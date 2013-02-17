@@ -168,7 +168,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
         if (status == FayeChannelSubscriptionStatusSubscribed) {
             if (completionHandler != NULL) {
-                completionHandler();
+                dispatch_async(dispatch_get_main_queue(), completionHandler);
             }
         }
     };
@@ -193,15 +193,12 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         return;
     }
     fayeChannel.messageHandlerBlock = NULL;
-    if (handler != NULL) {
-        fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
-            if (status == FayeChannelSubscriptionStatusUnsubscribed) {
-                handler();
-            }
-        };
-    } else {
-        fayeChannel.statusHandlerBlock = NULL;
-    }
+    fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
+        if (status == FayeChannelSubscriptionStatusUnsubscribed) {
+            [self.subscriptions removeObjectForKey: channelPath];
+            dispatch_async(dispatch_get_main_queue(), handler);
+        }
+    };
     if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusSubscribed) {
         [self queueChannelUnsubscription: channel];
     } else if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusSubscribing) {
@@ -218,6 +215,15 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         fayeChannel.channelPath = channel;
     }
     fayeChannel.extension = extension;
+}
+
+- (NSSet*) subscribedChannels
+{
+    NSMutableSet *channels = [NSMutableSet new];
+    for (FayeChannel *channel in self.subscriptions.allValues) {
+        [channels addObject: channel.channelPath];
+    }
+    return channels.copy;
 }
 
 #pragma mark - Publishing Messages
@@ -267,6 +273,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     }
     self.connectionStatusHandler = handler;
     self.currentServer = [[self sortedServers] objectAtIndex: 0];
+    [self.queuedMessages removeAllObjects];
     self.connectionStatus = FayeClientConnectionStatusConnecting;
     if ([self.currentServer connectsWithLongPolling]) {
         [self connectWithLongPolling];
@@ -492,7 +499,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 {
     NSMutableDictionary *unsubscribeMessage = [NSMutableDictionary new];
     [unsubscribeMessage addEntriesFromDictionary:
-     @{ @"channel": FayeClientSubscribeChannel,
+     @{ @"channel": FayeClientUnsubscribeChannel,
      @"id": [self nextMessageID],
      @"subscription": channelPath,
      @"clientId": self.currentServer.clientID
@@ -580,7 +587,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     } else {
         [self.queuedMessages addObject: queueItem];
         [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(sendMessagesAndEmptyQueue) object: nil];
-        [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 1];
+        [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 0.2];
     }
 }
 
@@ -704,7 +711,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     FayeChannel *channel = self.subscriptions[message.subscription];
     NSAssert(channel != nil, @"Received subscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
     NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
-    [self setSubscriptionStatus: FayeChannelSubscriptionStatusSubscribed forChannel: message.channel];
+    [self setSubscriptionStatus: FayeChannelSubscriptionStatusSubscribed forChannel: channel.channelPath];
     [self _debugMessage: @"Subscribed to: '%@'", channel.channelPath];
 }
 
@@ -712,8 +719,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 {
     FayeChannel *channel = self.subscriptions[message.subscription];
     NSAssert(channel != nil, @"Received unsubscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
-    NSAssert([self.currentServer.channelStatus[message.channel] integerValue] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
-    [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: message.channel];
+    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: channel.channelPath];
     [self _debugMessage: @"Unsubscribed from: '%@'", channel.channelPath];
 }
 
