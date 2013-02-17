@@ -12,3 +12,4 @@ Podfile.lock
 *.mode2v3
 *.xcworkspace
 xcuserdata
+node_modules
