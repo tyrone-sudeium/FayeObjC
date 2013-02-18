@@ -271,6 +271,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         [self _debugMessage: @"Ignoring connect message: no servers."];
         return;
     }
+    if (self.connectionStatus != FayeClientConnectionStatusDisconnected) {
+        [self _debugMessage: @"Ignoring connect message: already connecting."];
+    }
     self.connectionStatusHandler = handler;
     self.currentServer = [[self sortedServers] objectAtIndex: 0];
     [self.queuedMessages removeAllObjects];
@@ -294,12 +297,19 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) connectWithWebSocket
 {
-    
+    NSURLRequest *request = [NSURLRequest requestWithURL: self.currentServer.url
+                                             cachePolicy: NSURLCacheStorageNotAllowed
+                                         timeoutInterval: self.timeout];
+    self.webSocket = [[SRWebSocket alloc] initWithURLRequest: request];
+    self.webSocket.delegate = self;
+    [self.webSocket open];
 }
 
 - (void) webSocketDidOpen:(SRWebSocket *)webSocket
 {
-    
+    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+        return [self handshakeMessage];
+    }]];
 }
 
 - (void) webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error
@@ -319,7 +329,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message
 {
-    
+    if ([message isKindOfClass: [NSString class]]) {
+        [self handleReceivedData: [(NSString*) message dataUsingEncoding: NSUTF8StringEncoding]];
+    }
 }
 
 #pragma mark - HTTP Long Polling
@@ -607,6 +619,13 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     }]];
 }
 
+- (void) queueConnectMessage
+{
+    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+        return [self connectMessage];
+    }]];
+}
+
 - (void) sendMessagesAndEmptyQueue
 {
     if ([self.currentServer connectsWithLongPolling] && self.queuedMessages.count > 0) {
@@ -680,6 +699,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
         self.connectionStatus = FayeClientConnectionStatusConnected;
     }
+    if ([self.currentServer connectsWithWebSockets]) {
+        [self queueConnectMessage];
+    }
 }
 
 - (void) handleDisconnectMessage: (FayeMessage*) message
@@ -703,6 +725,14 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         if ([self subscriptionStatusForChannel: channelPath] == FayeChannelSubscriptionStatusUnsubscribed) {
             [self queueChannelSubscription: channelPath];
         }
+    }
+    
+    if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
+        self.connectionStatus = FayeClientConnectionStatusConnected;
+    }
+    
+    if ([self.currentServer connectsWithWebSockets]) {
+        [self queueConnectMessage];
     }
 }
 
@@ -825,6 +855,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (self.httpConnection) {
         [self.httpConnection cancel];
         self.httpConnection = nil;
+    }
+    if (self.webSocket) {
+        [self.webSocket close];
     }
     [self _closeLogFile];
 }
