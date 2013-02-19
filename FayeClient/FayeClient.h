@@ -68,6 +68,12 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 - (void) fayeClient: (FayeClient*) client
      didSendMessage: (NSDictionary*) message
           toChannel: (NSString*) channel;
+
+// Advanced stuff
+// Any and every message in and out of the Faye client can be overridden here.
+// Only override these if you know the ins-and-outs of the Bayeux protocol.
+- (NSDictionary*) fayeClient: (FayeClient*) client willSendMessage: (NSDictionary*) message;
+- (NSDictionary*) fayeClient: (FayeClient*) client willReceiveMessage: (NSDictionary*) message;
 @end
 
 

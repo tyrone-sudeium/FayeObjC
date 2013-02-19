@@ -80,6 +80,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         BOOL subscribed:1;
         BOOL unsubscribed:1;
         BOOL sentMessage:1;
+        BOOL willSend:1;
+        BOOL willReceive:1;
     } _delegateRespondsTo;
     
     NSInteger _nextSortIndex;
@@ -137,6 +139,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         _delegateRespondsTo.subscribed = [delegate respondsToSelector: @selector(fayeClient:didSubscribeToChannel:)];
         _delegateRespondsTo.unsubscribed = [delegate respondsToSelector: @selector(fayeClient:didUnsubscribeFromChannel:)];
         _delegateRespondsTo.sentMessage = [delegate respondsToSelector: @selector(fayeClient:didSendMessage:toChannel:)];
+        _delegateRespondsTo.willSend = [delegate respondsToSelector: @selector(fayeClient:willSendMessage:)];
+        _delegateRespondsTo.willReceive = [delegate respondsToSelector: @selector(fayeClient:willReceiveMessage:)];
         [self didChangeValueForKey: @"delegate"];
     }
 }
@@ -334,6 +338,14 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     }
 }
 
+- (void) sendCurrentMessageQueueToWebSocket
+{
+    NSData *data = [self dataForNextUpload];
+    if (data) {
+        [self.webSocket send: data];
+    }
+}
+
 #pragma mark - HTTP Long Polling
 
 - (void) connectWithLongPolling
@@ -344,30 +356,14 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) startHTTPConnection
 {
     NSData *data = nil;
-    NSError *error = nil;
     if (self.currentServer.clientID) {
-        NSMutableArray *messages = [NSMutableArray new];
-        [messages addObject: [self connectMessage]];
-        NSArray *queueMessages = [self messagesFromCurrentQueue];
-        [messages addObjectsFromArray: queueMessages];
-        NSInteger index = 0;
-        for (NSDictionary *message in queueMessages) {
-            if (message[@"data"] != nil) {
-                // It's a publish
-                FayeMessageQueueItem *item = [self.queuedMessages objectAtIndex: index];
-                if (item.sentMessageHandler != NULL) {
-                    self.sentMessageHandlers[message[@"id"]] = item.sentMessageHandler;
-                }
-            }
-            index++;
-        }
-        data = [NSJSONSerialization dataWithJSONObject: messages options: 0 error: &error];
-        if (error) {
-            [self _failWithError: error];
+        data = [self dataForNextUpload];
+        if (data == nil) {
             return;
         }
         [self.queuedMessages removeAllObjects];
     } else {
+        NSError *error = nil;
         data = [NSJSONSerialization dataWithJSONObject: @[[self handshakeMessage]] options: 0 error: &error];
         if (error) {
             [self _failWithError: error];
@@ -590,14 +586,58 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     return messages.copy;
 }
 
+- (NSData*) dataForNextUpload
+{
+    NSMutableArray *proposedMessages = [NSMutableArray new];
+    [proposedMessages addObject: [self connectMessage]];
+    NSArray *queueMessages = [self messagesFromCurrentQueue];
+    [proposedMessages addObjectsFromArray: queueMessages];
+    NSMutableArray *actualMessages = [NSMutableArray new];
+    NSInteger index = 0;
+    for (NSDictionary *message in queueMessages) {
+        if (message[@"data"] != nil) {
+            // It's a publish
+            FayeMessageQueueItem *item = [self.queuedMessages objectAtIndex: index];
+            if (item.sentMessageHandler != NULL) {
+                self.sentMessageHandlers[message[@"id"]] = item.sentMessageHandler;
+            }
+        }
+        index++;
+    }
+    if (_delegateRespondsTo.willSend) {
+        for (NSDictionary *message in proposedMessages) {
+            NSDictionary *override = [self.delegate fayeClient: self willSendMessage: message];
+            // At this time, I'm going to allow returning nil to mean "don't send the message".
+            if (override != nil) {
+                [actualMessages addObject: override];
+            }
+        }
+    } else {
+        [actualMessages addObjectsFromArray: proposedMessages];
+    }
+    NSError *error = nil;
+    NSData *data = [NSJSONSerialization dataWithJSONObject: actualMessages options: 0 error: &error];
+    if (error) {
+        [self _failWithError: error];
+        return nil;
+    }
+    return data;
+}
+
 #pragma mark - Internals
 
 - (void) queueMessage: (FayeMessageQueueItem*) queueItem
 {
+    [self queueMessage: queueItem atIndex: self.queuedMessages.count];
+}
+
+- (void) queueMessage: (FayeMessageQueueItem*) queueItem atIndex: (NSUInteger) index
+{
+    [self.queuedMessages insertObject: queueItem atIndex: index];
     if (self.connectionStatus == FayeClientConnectionStatusConnected && [self.currentServer connectsWithWebSockets]) {
         // WebSockets can send messages straight away!
+        [self sendCurrentMessageQueueToWebSocket];
     } else {
-        [self.queuedMessages addObject: queueItem];
         [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(sendMessagesAndEmptyQueue) object: nil];
         [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 0.2];
     }
@@ -621,9 +661,10 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) queueConnectMessage
 {
+    // Connect messages should probably always go first.
     [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
         return [self connectMessage];
-    }]];
+    }] atIndex: 0];
 }
 
 - (void) sendMessagesAndEmptyQueue
@@ -661,7 +702,15 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         [self _debugFayeMessage: messages];
     }
     
-    for (NSDictionary *messageJSON in messages) {
+    for (NSDictionary *proposedMessageJSON in messages) {
+        NSDictionary *messageJSON = proposedMessageJSON;
+        if (_delegateRespondsTo.willReceive) {
+            messageJSON = [self.delegate fayeClient: self willReceiveMessage: proposedMessageJSON];
+        }
+        // At this time, I'm going to allow returning nil to mean "ignore the message completely".
+        if (messageJSON == nil) {
+            continue;
+        }
         FayeMessage *message = [[FayeMessage alloc] initWithDict: messageJSON];
         if (message.advice) {
             [self handleAdvice: message.advice];
