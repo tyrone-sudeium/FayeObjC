@@ -64,10 +64,12 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 @property (nonatomic, strong) NSMutableDictionary *servers;
 @property (nonatomic, copy) FayeClientConnectionStatusHandlerBlock connectionStatusHandler;
 @property (nonatomic, strong) NSURLResponse *lastResponse;
-@property (nonatomic, strong) NSMutableArray *queuedMessages;
+@property (strong) NSMutableArray *queuedMessages;
 @property (nonatomic, strong) NSURLConnection *httpConnection;
 @property (nonatomic, strong) NSMutableData *httpData;
 @property (nonatomic, strong) NSMutableDictionary *sentMessageHandlers;
+@property (nonatomic, strong) dispatch_queue_t readQueue;
+@property (nonatomic, strong) dispatch_queue_t writeQueue;
 
 - (void) _debugMessage: (NSString*) format, ... NS_FORMAT_FUNCTION(1,2);
 
@@ -105,6 +107,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         self.httpData = [NSMutableData data];
         self.debugLogFileName = @"faye.log";
         _nextSortIndex = 0;
+        self.readQueue = dispatch_queue_create("com.sudeium.fayeclient-readqueue", DISPATCH_QUEUE_SERIAL);
+        self.writeQueue = dispatch_queue_create("com.sudeium.fayeclient-writequeue", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -129,7 +133,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     self.servers[serverKey] = server;
 }
 
-- (void) setDelegate:(id<FayeClientDelegate>)delegate
+- (void) setDelegate:(id<FayeClientDelegate,FayeClientDataDelegate>)delegate
 {
     if (delegate != _delegate) {
         [self willChangeValueForKey: @"delegate"];
@@ -334,16 +338,20 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message
 {
     if ([message isKindOfClass: [NSString class]]) {
-        [self handleReceivedData: [(NSString*) message dataUsingEncoding: NSUTF8StringEncoding]];
+        dispatch_async(self.readQueue, ^{
+            [self handleReceivedData: [(NSString*) message dataUsingEncoding: NSUTF8StringEncoding]];
+        });
     }
 }
 
 - (void) sendCurrentMessageQueueToWebSocket
 {
-    NSData *data = [self dataForNextUpload];
-    if (data) {
-        [self.webSocket send: data];
-    }
+    dispatch_async(self.writeQueue, ^{
+        NSData *data = [self dataForNextUpload];
+        if (data) {
+            [self.webSocket send: data];
+        }
+    });
 }
 
 #pragma mark - HTTP Long Polling
@@ -355,35 +363,39 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) startHTTPConnection
 {
-    NSData *data = nil;
-    if (self.currentServer.clientID) {
-        data = [self dataForNextUpload];
-        if (data == nil) {
-            return;
+    dispatch_async(self.writeQueue, ^{
+        NSData *data = nil;
+        if (self.currentServer.clientID) {
+            data = [self dataForNextUpload];
+            if (data == nil) {
+                return;
+            }
+            [self.queuedMessages removeAllObjects];
+        } else {
+            NSError *error = nil;
+            data = [NSJSONSerialization dataWithJSONObject: @[[self handshakeMessage]] options: 0 error: &error];
+            if (error) {
+                [self _failWithError: error];
+                return;
+            }
         }
-        [self.queuedMessages removeAllObjects];
-    } else {
-        NSError *error = nil;
-        data = [NSJSONSerialization dataWithJSONObject: @[[self handshakeMessage]] options: 0 error: &error];
-        if (error) {
-            [self _failWithError: error];
-            return;
+        
+        if (self.httpConnection != nil) {
+            [self.httpConnection cancel];
+            self.httpConnection = nil;
         }
-    }
-    
-    if (self.httpConnection != nil) {
-        [self.httpConnection cancel];
-        self.httpConnection = nil;
-    }
-    
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL: self.currentServer.url
-                                                           cachePolicy: NSURLCacheStorageNotAllowed
-                                                       timeoutInterval: self.currentServer.timeoutAdvice];
-    [request setHTTPMethod: @"POST"];
-    [request setHTTPBody: data];
-    [request setValue: @"application/json" forHTTPHeaderField: @"Content-Type"];
-    self.httpConnection = [NSURLConnection connectionWithRequest: request delegate: self];
-    [self.httpConnection start];
+        
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL: self.currentServer.url
+                                                               cachePolicy: NSURLCacheStorageNotAllowed
+                                                           timeoutInterval: self.currentServer.timeoutAdvice];
+        [request setHTTPMethod: @"POST"];
+        [request setHTTPBody: data];
+        [request setValue: @"application/json" forHTTPHeaderField: @"Content-Type"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.httpConnection = [NSURLConnection connectionWithRequest: request delegate: self];
+            [self.httpConnection start];
+        });
+    });
 }
 
 - (void) connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
@@ -410,7 +422,10 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    [self handleReceivedData: self.httpData];
+    NSData *data = [self.httpData copy]; // Probably not the most efficient way, but I can't think of a better way...
+    dispatch_async(self.readQueue, ^{
+        [self handleReceivedData: data];
+    });
     [self.httpData setLength: 0];
     [self _debugMessage: @"LONG-POLLING: Interval.  Timeout: %.1f", self.currentServer.timeoutAdvice];
     if ([self.lastResponse isKindOfClass: [NSHTTPURLResponse class]]) {
@@ -421,7 +436,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
             return;
         }
     }
-    [self startHTTPConnection];
+    if (self.currentServer.clientID) {
+        [self startHTTPConnection];
+    }
 }
 
 #pragma mark - Message Assembly
@@ -669,7 +686,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) sendMessagesAndEmptyQueue
 {
-    if ([self.currentServer connectsWithLongPolling] && self.queuedMessages.count > 0) {
+    if ([self.currentServer connectsWithLongPolling] && self.queuedMessages.count > 0 && self.currentServer.clientID) {
         [self startHTTPConnection];
     }
 }
@@ -807,7 +824,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 {
     dispatch_block_t sentHandler = self.sentMessageHandlers[message.fayeId];
     if (sentHandler) {
-        sentHandler();
+        dispatch_async(dispatch_get_main_queue(), sentHandler);
         [self.sentMessageHandlers removeObjectForKey: message.fayeId];
     }
     
@@ -823,11 +840,13 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (channel != nil) {
         if(message.data) {
             if (_delegateRespondsTo.receivedMessage) {
-                [self.delegate fayeClient: self didReceiveMessage: message.data onChannel: message.channel];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.delegate fayeClient: self didReceiveMessage: message.data onChannel: message.channel];
+                });
             }
         }
         if (channel.messageHandlerBlock != NULL) {
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            dispatch_async(dispatch_get_main_queue(), ^{
                 channel.messageHandlerBlock(self, message.channel, message.data);
             });
         }

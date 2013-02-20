@@ -18,7 +18,7 @@
         self.channelStatus = [NSMutableDictionary new];
         self.advice = @{ @"reconnect": @"retry",
                          @"interval": @0,
-                         @"timeout": @60};
+                         @"timeout": @60000};
     }
     return self;
 }
@@ -78,12 +78,12 @@
 
 - (NSTimeInterval) intervalAdvice
 {
-    return [self.advice[@"interval"] doubleValue];
+    return [self.advice[@"interval"] doubleValue] / 1000.0;
 }
 
 - (NSTimeInterval) timeoutAdvice
 {
-    return [self.advice[@"timeout"] doubleValue];
+    return [self.advice[@"timeout"] doubleValue] / 1000.0;
 }
 
 @end

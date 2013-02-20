@@ -59,6 +59,7 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 
 @protocol FayeClientDelegate <NSObject>
 @optional
+// All of these methods will run on the main dispatch queue.
 - (void) fayeClientDidChangeConnectionStatus: (FayeClient*) client;
 - (void) fayeClient: (FayeClient*) client
     didReceiveMessage: (NSDictionary*) message
@@ -68,10 +69,17 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 - (void) fayeClient: (FayeClient*) client
      didSendMessage: (NSDictionary*) message
           toChannel: (NSString*) channel;
+@end
 
+@protocol FayeClientDataDelegate <NSObject>
+@optional
 // Advanced stuff
 // Any and every message in and out of the Faye client can be overridden here.
 // Only override these if you know the ins-and-outs of the Bayeux protocol.
+// These methods will be called on the client's internal send and receive GCD queues,
+// respectively.  It's perfectly OK to block returning from these methods until your
+// data delegate has finished its work, but keep in mind that blocking for too long
+// may cause the server to time your client out.
 - (NSDictionary*) fayeClient: (FayeClient*) client willSendMessage: (NSDictionary*) message;
 - (NSDictionary*) fayeClient: (FayeClient*) client willReceiveMessage: (NSDictionary*) message;
 @end
@@ -79,7 +87,7 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 
 
 @interface FayeClient : NSObject
-@property (nonatomic, weak) id <FayeClientDelegate> delegate;
+@property (nonatomic, weak) id <FayeClientDelegate, FayeClientDataDelegate> delegate;
 @property (nonatomic, readonly) NSSet *subscribedChannels;
 @property (nonatomic, copy) NSDictionary *extension;
 @property (nonatomic, copy) NSDictionary *handshakeExtension;
