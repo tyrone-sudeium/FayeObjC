@@ -50,12 +50,7 @@
 {
     NSComparisonResult byFailures = [@(self.failures) compare: @(otherServer.failures)];
     if (byFailures == NSOrderedSame) {
-        NSComparisonResult byConnectionType = [@(self.connectionType) compare: @(otherServer.connectionType)];
-        if (byConnectionType == NSOrderedSame) {
-            return [@(self.sortIndex) compare: @(otherServer.sortIndex)];
-        } else {
-            return byConnectionType;
-        }
+        return [@(self.sortIndex) compare: @(otherServer.sortIndex)];
     } else {
         return byFailures;
     }
