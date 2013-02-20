@@ -21,7 +21,8 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '5.0'
   s.osx.deployment_target = '10.7'
   s.source_files = 'FayeClient/**/*.{h,m}'
+  s.public_header_files = 'FayeClient/FayeClient.h'
   s.framework = 'CFNetwork'
   s.requires_arc = true
-  s.dependency 'SocketRocket', '~> 0.2'
+  s.dependency 'SocketRocket', '= 0.2.0'
 end
