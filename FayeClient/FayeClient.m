@@ -805,8 +805,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) handleSubscribeMessage: (FayeMessage*) message
 {
     FayeChannel *channel = self.subscriptions[message.subscription];
-    NSAssert(channel != nil, @"Received subscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
-    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    NSAssert(channel != nil, @"Received subscribe message for channel: '%@' but I don't remember subscribing to it.", message.subscription);
+    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusSubscribing, @"Received subscribe message for channel: '%@' but its subscription status is in the wrong state.", message.subscription);
     [self setSubscriptionStatus: FayeChannelSubscriptionStatusSubscribed forChannel: channel.channelPath];
     [self _debugMessage: @"Subscribed to: '%@'", channel.channelPath];
 }
@@ -814,8 +814,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) handleUnsubscribeMessage: (FayeMessage*) message
 {
     FayeChannel *channel = self.subscriptions[message.subscription];
-    NSAssert(channel != nil, @"Received unsubscribe message for channel: '%@' but I don't remember subscribing to it.", message.channel);
-    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.channel);
+    NSAssert(channel != nil, @"Received unsubscribe message for channel: '%@' but I don't remember subscribing to it.", message.subscription);
+    NSAssert([self subscriptionStatusForChannel: channel.channelPath] == FayeChannelSubscriptionStatusUnsubscribing, @"Received unsubscribe message for channel: '%@' but its subscription status is in the wrong state.", message.subscription);
     [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: channel.channelPath];
     [self _debugMessage: @"Unsubscribed from: '%@'", channel.channelPath];
 }
