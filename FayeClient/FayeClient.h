@@ -87,13 +87,16 @@ typedef void(^FayeClientConnectionStatusHandlerBlock)(FayeClient *client, NSErro
 
 
 @interface FayeClient : NSObject
-@property (nonatomic, weak) id <FayeClientDelegate, FayeClientDataDelegate> delegate;
+@property (nonatomic, weak) id <FayeClientDelegate> delegate;
+@property (nonatomic, weak) id <FayeClientDataDelegate> dataDelegate;
 @property (nonatomic, readonly) NSSet *subscribedChannels;
 @property (nonatomic, copy) NSDictionary *extension;
 @property (nonatomic, copy) NSDictionary *handshakeExtension;
 @property (nonatomic, copy) NSDictionary *connectExtension;
 @property (nonatomic, assign) NSTimeInterval timeout;
 @property (nonatomic, readonly, assign) FayeClientConnectionStatus connectionStatus;
+// Should we make this read/write?  Discuss.
+@property (nonatomic, readonly) NSString *clientID;
 @property (nonatomic, assign) BOOL debug;
 @property (nonatomic, copy) NSString *debugLogFileName;
 

@@ -82,9 +82,12 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         BOOL subscribed:1;
         BOOL unsubscribed:1;
         BOOL sentMessage:1;
+    } _delegateRespondsTo;
+    
+    struct {
         BOOL willSend:1;
         BOOL willReceive:1;
-    } _delegateRespondsTo;
+    } _dataDelegateRespondsTo;
     
     NSInteger _nextSortIndex;
     NSInteger _messageID;
@@ -133,7 +136,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     self.servers[serverKey] = server;
 }
 
-- (void) setDelegate:(id<FayeClientDelegate,FayeClientDataDelegate>)delegate
+- (void) setDelegate:(id<FayeClientDelegate>)delegate
 {
     if (delegate != _delegate) {
         [self willChangeValueForKey: @"delegate"];
@@ -143,10 +146,23 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         _delegateRespondsTo.subscribed = [delegate respondsToSelector: @selector(fayeClient:didSubscribeToChannel:)];
         _delegateRespondsTo.unsubscribed = [delegate respondsToSelector: @selector(fayeClient:didUnsubscribeFromChannel:)];
         _delegateRespondsTo.sentMessage = [delegate respondsToSelector: @selector(fayeClient:didSendMessage:toChannel:)];
-        _delegateRespondsTo.willSend = [delegate respondsToSelector: @selector(fayeClient:willSendMessage:)];
-        _delegateRespondsTo.willReceive = [delegate respondsToSelector: @selector(fayeClient:willReceiveMessage:)];
         [self didChangeValueForKey: @"delegate"];
     }
+}
+
+- (void) setDataDelegate:(id<FayeClientDataDelegate>)dataDelegate
+{
+    if (_dataDelegate != dataDelegate) {
+        [self willChangeValueForKey: @"dataDelegate"];
+        _dataDelegateRespondsTo.willSend = [dataDelegate respondsToSelector: @selector(fayeClient:willSendMessage:)];
+        _dataDelegateRespondsTo.willReceive = [dataDelegate respondsToSelector: @selector(fayeClient:willReceiveMessage:)];
+        [self didChangeValueForKey: @"dataDelegate"];
+    }
+}
+
+- (NSString*) clientID
+{
+    return self.currentServer.clientID;
 }
 
 #pragma mark - Channels
@@ -621,9 +637,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         }
         index++;
     }
-    if (_delegateRespondsTo.willSend) {
+    if (_dataDelegateRespondsTo.willSend) {
         for (NSDictionary *message in proposedMessages) {
-            NSDictionary *override = [self.delegate fayeClient: self willSendMessage: message];
+            NSDictionary *override = [self.dataDelegate fayeClient: self willSendMessage: message];
             // At this time, I'm going to allow returning nil to mean "don't send the message".
             if (override != nil) {
                 [actualMessages addObject: override];
@@ -721,8 +737,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     
     for (NSDictionary *proposedMessageJSON in messages) {
         NSDictionary *messageJSON = proposedMessageJSON;
-        if (_delegateRespondsTo.willReceive) {
-            messageJSON = [self.delegate fayeClient: self willReceiveMessage: proposedMessageJSON];
+        if (_dataDelegateRespondsTo.willReceive) {
+            messageJSON = [self.dataDelegate fayeClient: self willReceiveMessage: proposedMessageJSON];
         }
         // At this time, I'm going to allow returning nil to mean "ignore the message completely".
         if (messageJSON == nil) {
@@ -980,6 +996,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) _failWithError: (NSError*) error
 {
+    [self _debugMessage: @"%@", error];
     [self disconnectNow];
     self.connectionStatus = FayeClientConnectionStatusDisconnected;
 }
