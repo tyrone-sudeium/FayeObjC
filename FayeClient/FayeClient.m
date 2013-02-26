@@ -54,6 +54,26 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     item.block = block;
     return item;
 }
+- (NSString*) description
+{
+    NSString *desc = @"invalid message";
+    if (self.block) {
+        desc = @"custom message";
+        NSDictionary *d = self.block();
+        if ([d[@"channel"] isEqualToString: FayeClientConnectChannel]) {
+            desc = @"connect";
+        } else if ([d[@"channel"] isEqualToString: FayeClientHandshakeChannel]) {
+            desc = @"handshake";
+        } else if ([d[@"channel"] isEqualToString: FayeClientDisconnectChannel]) {
+            desc = @"disconnect";
+        } else if ([d[@"channel"] isEqualToString: FayeClientSubscribeChannel]) {
+            desc = [NSString stringWithFormat: @"subscribe %@", d[@"subscription"]];
+        } else if ([d[@"channel"] isEqualToString: FayeClientUnsubscribeChannel]) {
+            desc = [NSString stringWithFormat: @"unsubscribe %@", d[@"subscription"]];
+        }
+    }
+    return [NSString stringWithFormat: @"<%@: %p> (%@)", self.class, self, desc];
+}
 @end
 
 @interface FayeClient () <SRWebSocketDelegate, NSURLConnectionDataDelegate, NSURLConnectionDelegate>
@@ -65,6 +85,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 @property (nonatomic, copy) FayeClientConnectionStatusHandlerBlock connectionStatusHandler;
 @property (nonatomic, strong) NSURLResponse *lastResponse;
 @property (strong) NSMutableArray *queuedMessages;
+@property (strong) NSMutableArray *alternateQueue;
 @property (nonatomic, strong) NSURLConnection *httpConnection;
 @property (nonatomic, strong) NSMutableData *httpData;
 @property (nonatomic, strong) NSMutableDictionary *sentMessageHandlers;
@@ -134,6 +155,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     FayeServer *server = [FayeServer fayeServerWithURL: url];
     server.sortIndex = _nextSortIndex++;
     self.servers[serverKey] = server;
+    [self _debugMessage: @"Registered server: %@", url.absoluteString];
 }
 
 - (void) setDelegate:(id<FayeClientDelegate>)delegate
@@ -194,10 +216,12 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
             if (completionHandler != NULL) {
                 dispatch_async(dispatch_get_main_queue(), completionHandler);
             }
+            [self _debugMessage: @"Channel: %@ subscribed.", channel];
         }
     };
     if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusUnsubscribed) {
         [self queueChannelSubscription: channel];
+        [self _debugMessage: @"Channel: %@ queued for subscription.", channel];
     } else if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusUnsubscribing) {
         fayeChannel.markedForUnsubscription = NO;
         fayeChannel.markedForSubscription = YES;
@@ -222,9 +246,11 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
             [self.subscriptions removeObjectForKey: channelPath];
             dispatch_async(dispatch_get_main_queue(), handler);
         }
+        [self _debugMessage: @"Channel: %@ unsubscribed.", channel];
     };
     if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusSubscribed) {
         [self queueChannelUnsubscription: channel];
+        [self _debugMessage: @"Channel: %@ queued for unsubscription.", channel];
     } else if ([self subscriptionStatusForChannel:channel] == FayeChannelSubscriptionStatusSubscribing) {
         fayeChannel.markedForUnsubscription = YES;
         fayeChannel.markedForSubscription = NO;
@@ -307,14 +333,35 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     } else {
         [self connectWithWebSocket];
     }
+    [self _debugMessage: @"Connecting to server: %@", self.currentServer.url.absoluteString];
 }
 
 - (void) disconnect
 {
-    self.connectionStatus = FayeClientConnectionStatusDisconnecting;
-    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
-        return [self disconnectMessage];
-    }]];
+    if ([self.currentServer connectsWithLongPolling]) {
+        self.connectionStatus = FayeClientConnectionStatusDisconnecting;
+        [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+            return [self disconnectMessage];
+        }]];
+    } else {
+        if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
+            // Just close the connection.
+            [self disconnectNow];
+        } else if (self.connectionStatus == FayeClientConnectionStatusConnected) {
+            // We need to send a disconnect message.
+            dispatch_async(self.writeQueue, ^{
+                self.alternateQueue = self.queuedMessages.mutableCopy;
+                [self.queuedMessages removeAllObjects];
+                [self.queuedMessages addObject: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+                    return [self disconnectMessage];
+                }]];
+                NSData *data = [self dataForNextUpload];
+                if (data) {
+                    [self.webSocket send: data];
+                }
+            });
+        }
+    }
 }
 
 #pragma mark - WebSockets
@@ -331,9 +378,19 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) webSocketDidOpen:(SRWebSocket *)webSocket
 {
-    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
-        return [self handshakeMessage];
-    }]];
+    [self _debugMessage: @"WebSocket: Opened.  Sending handshake."];
+    dispatch_async(self.writeQueue, ^{
+        self.alternateQueue = self.queuedMessages.mutableCopy;
+        [self.queuedMessages removeAllObjects];
+        [self.queuedMessages addObject: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+            return [self handshakeMessage];
+        }]];
+        NSData *data = [self dataForNextUploadWithConnectMessage: NO];
+        [self.queuedMessages removeAllObjects];
+        if (data) {
+            [self.webSocket send: data];
+        }
+    });
 }
 
 - (void) webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error
@@ -348,7 +405,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
             reason:(NSString *)reason
           wasClean:(BOOL)wasClean
 {
-    
+    [self _debugMessage: @"WebSocket: Closed."];
 }
 
 - (void) webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message
@@ -367,6 +424,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         if (data) {
             [self.webSocket send: data];
         }
+        [self.queuedMessages removeAllObjects];
     });
 }
 
@@ -621,8 +679,19 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (NSData*) dataForNextUpload
 {
+    if (self.currentServer.connectsWithLongPolling) {
+        return [self dataForNextUploadWithConnectMessage: YES];
+    } else {
+        return [self dataForNextUploadWithConnectMessage: NO];
+    }
+}
+
+- (NSData*) dataForNextUploadWithConnectMessage: (BOOL) connectMessage
+{
     NSMutableArray *proposedMessages = [NSMutableArray new];
-    [proposedMessages addObject: [self connectMessage]];
+    if (connectMessage) {
+        [proposedMessages addObject: [self connectMessage]];
+    }
     NSArray *queueMessages = [self messagesFromCurrentQueue];
     [proposedMessages addObjectsFromArray: queueMessages];
     NSMutableArray *actualMessages = [NSMutableArray new];
@@ -666,13 +735,19 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) queueMessage: (FayeMessageQueueItem*) queueItem atIndex: (NSUInteger) index
 {
-    [self.queuedMessages insertObject: queueItem atIndex: index];
-    if (self.connectionStatus == FayeClientConnectionStatusConnected && [self.currentServer connectsWithWebSockets]) {
-        // WebSockets can send messages straight away!
-        [self sendCurrentMessageQueueToWebSocket];
+    if (self.alternateQueue != nil) {
+        [self.alternateQueue insertObject: queueItem atIndex: index];
     } else {
-        [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(sendMessagesAndEmptyQueue) object: nil];
-        [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 0.2];
+        [self.queuedMessages insertObject: queueItem atIndex: index];
+    }
+    if ([self.currentServer connectsWithWebSockets]) {
+        if (self.connectionStatus == FayeClientConnectionStatusConnected) {
+            [self sendMessagesAndEmptyQueueDelayed];
+        } else {
+            [self _debugMessage: @"WebSocket: Not sending messages because the WebSocket isn't ready!"];
+        }
+    } else {
+        [self sendMessagesAndEmptyQueueDelayed];
     }
 }
 
@@ -695,15 +770,46 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) queueConnectMessage
 {
     // Connect messages should probably always go first.
-    [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
-        return [self connectMessage];
-    }] atIndex: 0];
+    if ([self.currentServer connectsWithLongPolling]) {
+        [self queueMessage: [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
+            return [self connectMessage];
+        }] atIndex: 0];
+    } else {
+        // Send them up immediately for WebSockets.  Faye's got this weird behaviour
+        // where if you send up other messages with the connect payload, it won't
+        // respond at all until the connect interval.  Probably technically a bug in
+        // the Faye server, but this workaround works well enough.
+        dispatch_async(self.writeQueue, ^{
+            self.alternateQueue = self.queuedMessages.mutableCopy;
+            [self.queuedMessages removeAllObjects];
+            NSData *data = [self dataForNextUploadWithConnectMessage: YES];
+            self.queuedMessages = self.alternateQueue;
+            self.alternateQueue = nil;
+            if (data) {
+                [self.webSocket send: data];
+            }
+        });
+    }
+}
+
+- (void) sendMessagesAndEmptyQueueDelayed
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // The only thread I know *for sure* that supports the runloop mode that this requires is main
+        [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(sendMessagesAndEmptyQueue) object: nil];
+        [self performSelector: @selector(sendMessagesAndEmptyQueue) withObject: nil afterDelay: 0.2];
+    });
 }
 
 - (void) sendMessagesAndEmptyQueue
 {
-    if ([self.currentServer connectsWithLongPolling] && self.queuedMessages.count > 0 && self.currentServer.clientID) {
-        [self startHTTPConnection];
+    if (self.queuedMessages.count > 0 && self.currentServer.clientID) {
+        [self _debugMessage: @"Sending queue: %@", self.queuedMessages];
+        if ([self.currentServer connectsWithLongPolling]) {
+            [self startHTTPConnection];
+        } else {
+            [self sendCurrentMessageQueueToWebSocket];
+        }
     }
 }
 
@@ -782,6 +888,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         self.connectionStatus = FayeClientConnectionStatusConnected;
     }
     if ([self.currentServer connectsWithWebSockets]) {
+        [self _debugMessage: @"WebSocket: Connect interval."];
         [self queueConnectMessage];
     }
 }
@@ -795,6 +902,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         [self disconnectNow];
         self.connectionStatusHandler = nil;
         [self _closeLogFile];
+        [self.queuedMessages removeAllObjects];
     }
 }
 
@@ -809,12 +917,16 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         }
     }
     
-    if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
-        self.connectionStatus = FayeClientConnectionStatusConnected;
+    if ([self.currentServer connectsWithWebSockets]) {
+        if (self.alternateQueue) {
+            [self.queuedMessages addObjectsFromArray: self.alternateQueue];
+            self.alternateQueue = nil;
+        }
+        [self queueConnectMessage];
     }
     
-    if ([self.currentServer connectsWithWebSockets]) {
-        [self queueConnectMessage];
+    if (self.connectionStatus == FayeClientConnectionStatusConnecting) {
+        self.connectionStatus = FayeClientConnectionStatusConnected;
     }
 }
 
@@ -895,7 +1007,6 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 {
     FayeChannelSubscriptionStatus oldStatus = [self subscriptionStatusForChannel: channel];
     if (status != oldStatus) {
-        [self _debugMessage: @"Status for '%@': %i", channel, status];
         self.currentServer.channelStatus[channel] = @(status);
         FayeChannel *fayeChannel = self.subscriptions[channel];
         if (fayeChannel.statusHandlerBlock != NULL) {
@@ -936,6 +1047,10 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 // Doesn't unsubscribe, doesn't update connection status.
 - (void) disconnectNow
 {
+    if (self.alternateQueue) {
+        [self.queuedMessages addObjectsFromArray: self.alternateQueue];
+        self.alternateQueue = nil;
+    }
     if (self.httpConnection) {
         [self.httpConnection cancel];
         self.httpConnection = nil;
