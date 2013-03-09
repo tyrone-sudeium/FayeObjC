@@ -19,9 +19,7 @@ Supports listening to wildcard channels.  For example:
 This will listen to all sub-channels on `/chat/1/users`, such as `/chat/1/users/1` or `/chat/1/users/4`.
 
 ### Debug Logging
-Separated out Faye's debug log statement into a unique `FAYE_DLog` macro, just in case your project defines its very own `DLog` macro!  This should reduce the preprocessor pain.  
-
-Also, when the `FAYE_DEBUGGING` macro is defined in your build environment (highly recommended for your Debug build configuration), all messages to-and-from the Faye server are written out (with a timestamp) to:
+When you set the debug property to true on a FayeClient, all messages to-and-from the Faye server are written out (with a timestamp) to:
 
         /path/to/application/Library/Caches/faye.log
 
@@ -32,21 +30,16 @@ If the received message is valid JSON, it'll even pretty-print it for you!
 ### Cocoapods Support [done]
 Remove all third-party dependencies from the base repository.  Create a podspec for FayeObjC and specify all dependencies there.  Add dependencies as submodules and update example projects to link to the dependencies and FayeClient using project linking.
 
-### Long-polling Support [in dev]
+### Long-polling Support [done?]
 As well as websockets, the client should use long-polling if the connection URL is `http://` or `https://`.  Note that this behaviour differs from the Faye JavaScript client which - in my opinion - is really bizarre.
 
-### Multiple Server Support [in dev]
-A single `FayeClient` instance should be able to accept multiple server addresses, so in the event of a connection error to one, it can fall back on to another (if available).  The order of precedence should be:
-
-1. `wss://`
-2. `ws://`
-3. `https://`
-4. `http://`
+### Multiple Server Support [done]
+A single `FayeClient` instance should be able to accept multiple server addresses, so in the event of a connection error to one, it can fall back on to another (if available).  The order of precedence is the order in which you add them to the Faye Client.
 
 It will also keep track of how many connection errors have occurred on each registered server, and sort by that first.
 
 ### Better Support for Extensions
-As well as the traditional method of just sending up an `NSDictionary` with every outgoing message, it'll also be possible to assign extensions per-server and per-channel and per-message.  The extension dictionary will be merged at the time messages are sent, prioritising keys in message, then channel, then server.
+As well as the traditional method of just sending up an `NSDictionary` with every outgoing message, it'll also be possible to assign extensions per-server and per-channel and per-message.  The extension dictionary will be merged at the time messages are sent, prioritising keys in message, then channel, then server.  If you need even more fine-grained control than this, there's a special delegate you can implement that can override every single message sent and received from the server and allow the delegate to change the data as needed before being processed by the Faye Client or Faye Server.
 
 ### Better Support tor Edge Cases
 The current client doesn't handle strange user behaviour like sending a `- connect` more than once very gracefully.  Hopefully with the help of some contributors (hint, hint) I can iron out a lot of these quirks.
