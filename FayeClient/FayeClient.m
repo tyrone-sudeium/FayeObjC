@@ -244,7 +244,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     fayeChannel.statusHandlerBlock = ^(FayeClient *client, NSString* channelPath, FayeChannelSubscriptionStatus status) {
         if (status == FayeChannelSubscriptionStatusUnsubscribed) {
             [self.subscriptions removeObjectForKey: channelPath];
-            dispatch_async(dispatch_get_main_queue(), handler);
+            if (handler != NULL) {
+                dispatch_async(dispatch_get_main_queue(), handler);
+            }
         }
         [self _debugMessage: @"Channel: %@ unsubscribed.", channel];
     };
@@ -302,7 +304,11 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     FayeMessageQueueItem *queueItem = [FayeMessageQueueItem itemWithBlock:^NSDictionary *{
         return [self publishMessageForChannelPath: channel withData: message extension:extension];
     }];
-    queueItem.sentMessageHandler = handler;
+    
+    if (self.subscriptions[channel] != nil) {
+        // We only support sent message callbacks if you're subscribed to the channel you're sending to.
+        queueItem.sentMessageHandler = handler;
+    }
     [self queueMessage: queueItem];
 }
 
