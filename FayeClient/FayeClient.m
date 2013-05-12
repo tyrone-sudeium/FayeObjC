@@ -798,6 +798,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
             NSData *data = [self dataForNextUploadWithConnectMessage: YES];
             self.queuedMessages = self.alternateQueue;
             self.alternateQueue = nil;
+            [self _debugMessage: @"Sending connect message: %@", [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding]];
             if (data) {
                 [self.webSocket send: data];
             }
@@ -853,6 +854,9 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     if (self.debug) {
         [self _debugFayeMessage: messages];
     }
+    
+    // Any received data means it didn't time out.
+    [self resetTimeoutTimer];
     
     for (NSDictionary *proposedMessageJSON in messages) {
         NSDictionary *messageJSON = proposedMessageJSON;
@@ -1051,6 +1055,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 - (void) cycleConnection
 {
     [self disconnectNow];
+    [self resetTimeoutTimer];
     self.connectionStatus = FayeClientConnectionStatusConnecting;
     double delayInSeconds = self.currentServer.intervalAdvice;
     if (delayInSeconds < 3) {
@@ -1077,11 +1082,28 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
         [self.webSocket close];
     }
     [self _closeLogFile];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(failWithTimeout) object: nil];
+    });
 }
 
 - (NSArray*) sortedServers
 {
     return [self.servers.allValues sortedArrayUsingSelector: @selector(compareServer:)];
+}
+
+- (void) failWithTimeout
+{
+    [self _debugMessage: @"Server timed out.  Retrying..."];
+    [self cycleConnection];
+}
+
+- (void) resetTimeoutTimer
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(failWithTimeout) object: nil];
+        [self performSelector: @selector(failWithTimeout) withObject: nil afterDelay: self.currentServer.timeoutAdvice + 10.0];
+    });
 }
 
 - (void) _debugMessage:(NSString *)format, ...
