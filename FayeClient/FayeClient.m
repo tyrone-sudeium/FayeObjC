@@ -89,8 +89,8 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 @property (nonatomic, strong) NSURLConnection *httpConnection;
 @property (nonatomic, strong) NSMutableData *httpData;
 @property (nonatomic, strong) NSMutableDictionary *sentMessageHandlers;
-@property (nonatomic, strong) dispatch_queue_t readQueue;
-@property (nonatomic, strong) dispatch_queue_t writeQueue;
+@property (nonatomic, assign) dispatch_queue_t readQueue;
+@property (nonatomic, assign) dispatch_queue_t writeQueue;
 
 - (void) _debugMessage: (NSString*) format, ... NS_FORMAT_FUNCTION(1,2);
 
@@ -1132,6 +1132,14 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     [self _debugMessage: @"%@", error];
     [self disconnectNow];
     self.connectionStatus = FayeClientConnectionStatusDisconnected;
+}
+
+- (void) dealloc
+{
+    dispatch_release(self.readQueue);
+    dispatch_release(self.writeQueue);
+    self.readQueue = nil;
+    self.writeQueue = nil;
 }
 
 @end
