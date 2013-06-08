@@ -946,7 +946,10 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
     }
     
     for (NSString *channelPath in self.subscriptions) {
-        if ([self subscriptionStatusForChannel: channelPath] == FayeChannelSubscriptionStatusUnsubscribed) {
+        FayeChannelSubscriptionStatus channelStatus = [self subscriptionStatusForChannel: channelPath];
+        if (channelStatus != FayeChannelSubscriptionStatusSubscribing &&
+            channelStatus != FayeChannelSubscriptionStatusUnsubscribing)
+        {
             [self queueChannelSubscription: channelPath];
         }
     }
