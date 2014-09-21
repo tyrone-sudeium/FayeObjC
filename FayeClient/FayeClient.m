@@ -912,7 +912,7 @@ typedef NSDictionary*(^FayeMessageQueueItemGetMessageBlock)(void);
 
 - (void) handleDisconnectMessage: (FayeMessage*) message
 {
-    for (NSString *channelPath in self.subscriptions) {
+    for (NSString *channelPath in self.subscriptions.copy) {
         [self setSubscriptionStatus: FayeChannelSubscriptionStatusUnsubscribed forChannel: channelPath];
     }
     if (self.connectionStatus == FayeClientConnectionStatusDisconnecting) {
